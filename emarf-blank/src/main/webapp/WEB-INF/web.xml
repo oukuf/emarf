@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://xmlns.jcp.org/xml/ns/javaee" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd" id="WebApp_ID" version="3.1">
+
+  <display-name>emarf-blank</display-name>
+
+  <filter>
+    <display-name>EncodingFilter</display-name>
+    <filter-name>EncodingFilter</filter-name>
+    <filter-class>jp.co.golorp.emarf.servlet.EncodingFilter</filter-class>
+    <init-param>
+      <param-name>encoding</param-name>
+      <param-value>UTF-8</param-value>
+    </init-param>
+  </filter>
+  <!-- ログイン機能を利用する場合
+  <filter>
+    <display-name>LoginFilter</display-name>
+    <filter-name>LoginFilter</filter-name>
+    <filter-class>jp.co.golorp.emarf.servlet.LoginFilter</filter-class>
+    <init-param>
+      <param-name>login_keys</param-name>
+      <param-value>MUser</param-value>
+    </init-param>
+    <init-param>
+      <param-name>login_uri</param-name>
+      <param-value>/pows/emarf/Login/</param-value>
+    </init-param>
+    <init-param>
+      <param-name>logout_uri</param-name>
+      <param-value>/pows/emarf/logout/</param-value>
+    </init-param>
+  </filter>
+  -->
+  <filter>
+    <display-name>ApplicationErrorFilter</display-name>
+    <filter-name>ApplicationErrorFilter</filter-name>
+    <filter-class>jp.co.golorp.emarf.servlet.ApplicationErrorFilter</filter-class>
+  </filter>
+  <filter>
+    <display-name>TransactionFilter</display-name>
+    <filter-name>TransactionFilter</filter-name>
+    <filter-class>jp.co.golorp.emarf.servlet.TransactionFilter</filter-class>
+  </filter>
+  <filter>
+    <display-name>SessionFormFilter</display-name>
+    <filter-name>SessionFormFilter</filter-name>
+    <filter-class>jp.co.golorp.emarf.servlet.SessionFormFilter</filter-class>
+  </filter>
+  <!-- サービス時間チェック機能を利用する場合
+  <filter>
+    <display-name>OutOfServiceFilter</display-name>
+    <filter-name>OutOfServiceFilter</filter-name>
+    <filter-class>jp.co.golorp.emarf.servlet.OutOfServiceFilter</filter-class>
+  </filter>
+  -->
+
+  <filter-mapping>
+    <filter-name>EncodingFilter</filter-name>
+    <servlet-name>EmarfServlet</servlet-name>
+  </filter-mapping>
+  <!-- ログイン機能を利用する場合
+  <filter-mapping>
+    <filter-name>LoginFilter</filter-name>
+    <servlet-name>EmarfServlet</servlet-name>
+  </filter-mapping>
+  -->
+  <filter-mapping>
+    <filter-name>ApplicationErrorFilter</filter-name>
+    <servlet-name>EmarfServlet</servlet-name>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>TransactionFilter</filter-name>
+    <servlet-name>EmarfServlet</servlet-name>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>SessionFormFilter</filter-name>
+    <servlet-name>EmarfServlet</servlet-name>
+  </filter-mapping>
+  <!-- サービス時間チェック機能を利用する場合
+  <filter-mapping>
+    <filter-name>OutOfServiceFilter</filter-name>
+    <servlet-name>EmarfServlet</servlet-name>
+  </filter-mapping>
+  -->
+
+  <servlet>
+    <display-name>EmarfServlet</display-name>
+    <servlet-name>EmarfServlet</servlet-name>
+    <servlet-class>jp.co.golorp.emarf.servlet.http.EmarfServlet</servlet-class>
+    <!-- EmarfServlet内で規定値を定義しているので、それらを変更する場合は必要
+    <init-param>
+      <description>jspファイルの保管パス</description>
+      <param-name>base_path</param-name>
+      <param-value>/WEB-INF/jsp</param-value>
+    </init-param>
+    <init-param>
+      <description>テンプレートjspファイルのパス</description>
+      <param-name>template</param-name>
+      <param-value>/WEB-INF/jsp/layout.jsp</param-value>
+    </init-param>
+    <init-param>
+      <description>モデル名がない時のjspファイル規定値</description>
+      <param-name>default_contents</param-name>
+      <param-value>index</param-value>
+    </init-param>
+    <init-param>
+      <description>jspファイル格納フォルダ名規定値</description>
+      <param-name>default_model</param-name>
+      <param-value>default</param-value>
+    </init-param>
+    <init-param>
+      <description>ログ対象外とする静的アクセスの正規表現</description>
+      <param-name>static_resource_regexp</param-name>
+      <param-value>.+(\\.css$|\\.gif$|\\.js$|\\.png$)</param-value>
+    </init-param>
+    -->
+    <!-- アクションクラスを作成する場合は必要
+    <init-param>
+      <description>アクションクラス格納パッケージ名規定値</description>
+      <param-name>action_package</param-name>
+      <param-value>jp.co.golorp.emarfBlank.action</param-value>
+    </init-param>
+    -->
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>EmarfServlet</servlet-name>
+    <url-pattern>/emarf/*</url-pattern>
+  </servlet-mapping>
+
+  <listener>
+    <listener-class>jp.co.golorp.emarf.servlet.http.EmarfListener</listener-class>
+  </listener>
+  <listener>
+    <listener-class>jp.co.golorp.emarfBlank.servlet.http.MySqlCleanupListener</listener-class>
+  </listener>
+
+  <error-page>
+    <exception-type>jp.co.golorp.emarf.exception.ApplicationError</exception-type>
+    <location>/appError.jsp</location>
+  </error-page>
+  <error-page>
+    <exception-type>jp.co.golorp.emarf.exception.SystemError</exception-type>
+    <location>/sysError.jsp</location>
+  </error-page>
+
+</web-app>
