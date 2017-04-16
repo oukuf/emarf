@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+「Apache License, Version 2.0」のライセンスが適用されます。
+当ファイルを使用する場合はこのライセンスに従ってください。
+
+ライセンスの全文は「http://www.apache.org/licenses/LICENSE-2.0」にあります。
+
+適用法または書面による同意が必要な場合を除き、
+ライセンスに基づいて配布されるソフトウェアは、
+明示的または黙示的にいかなる種類の保証や条件もなく「現状有姿」で配布されています。
+
+ライセンスに基づいて許可および制限を規定する特定の言語については上記ライセンスを参照してください。
+-->
+<!DOCTYPE configuration>
+<configuration debug="false">
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%-5level %-40logger{40} [L:%-4line] %msg%n</pattern>
+    </encoder>
+  </appender>
+  <appender name="EXTOUT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <append>true</append>
+    <file>.\log\emarf.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <fileNamePattern>.\log\emarf.%i.log.gz</fileNamePattern>
+      <minIndex>1</minIndex>
+      <maxIndex>10</maxIndex>
+    </rollingPolicy>
+    <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <maxFileSize>10MB</maxFileSize>
+    </triggeringPolicy>
+    <encoder>
+      <pattern>%d %-5level [%-22thread] %-60logger{60} [L:%-4line] %msg%n</pattern>
+    </encoder>
+  </appender>
+  <logger name="net.sf.ehcache" level="info" />
+  <!--
+  <logger name="jp.co.golorp.emarf.model.generator.BeanGenerator" level="trace" />
+  <logger name="jp.co.golorp.emarf.model.ModelsCache" level="trace" />
+  <logger name="jp.co.golorp.emarf.servlet.http.EmarfListener" level="trace" />
+  <logger name="jp.co.golorp.emarf.servlet.http.EmarfServlet" level="trace" />
+  <logger name="jp.co.golorp.emarf.servlet.OutOfServiceFilter" level="trace" />
+  <logger name="jp.co.golorp.emarf.sql.MetaData" level="trace" />
+  <logger name="jp.co.golorp.emarf.util.CryptUtils" level="trace" />
+  <logger name="jp.co.golorp.emarf.util.SessionFormUtils" level="trace" />
+  -->
+  <root level="trace">
+    <appender-ref ref="STDOUT" />
+    <appender-ref ref="EXTOUT" />
+  </root>
+</configuration>
