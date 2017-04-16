@@ -1,0 +1,1966 @@
+<html>
+<meta charset="UTF-8">
+<head>
+<style type="text/css">
+body {
+	background-color: #ffffe5;
+	font-size: small;
+}
+
+a {
+	color: blue;
+}
+
+h1 {
+	background-color: #4682b4;
+	border-bottom: 2px #d2b48c solid;
+	border-right: 2px #d2b48c solid;
+	color: #f5f5f5;
+	font-weight: normal;
+	padding-left: 0.5em;
+	margin-top: 0px;
+}
+
+h1 a {
+	float: right;
+	margin-right: 0.5em;
+}
+
+aside {
+	background-color: #fff;
+	border: 1px #000 solid;
+	float: left;
+	width: 13em;
+}
+
+aside h1 {
+	border-style: none;
+	font-size: small;
+}
+
+aside ul {
+	padding-left: 0em;
+}
+
+aside li {
+	margin-bottom: 1em;
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+}
+
+article {
+	padding-left: 14em;
+}
+
+pre {
+	background-color: #fff;
+	border: 1px #ccc solid;
+	font-size: 1.2em;
+	padding: 0.5em;
+}
+
+dt {
+	border-bottom: 1px #d2b48c solid;
+	margin-top: 0.5em;
+	padding-left: 0.5em;
+}
+
+dd dd dt {
+	border-style: none;
+	margin-top: 1em;
+	padding-left: 0px;
+}
+
+section>ol {
+	padding-left: 2em;
+}
+
+section>dl>dt, section>ol>li>dl>dt {
+	border-left: 4px #d2b48c solid;
+}
+
+table {
+	background-color: #4682b4;
+	font-size: small;
+}
+
+caption {
+	background-color: #4682b4;
+	border: solid 2px #d2b48c;
+	color: #fff;
+}
+
+th {
+	background-color: #d2b48c;
+	border: solid 1px #000;
+}
+
+td {
+	border: solid 1px #000;
+	background-color: #fff;
+}
+
+footer {
+	background-color: #4682b4;
+	border-bottom: 2px #d2b48c solid;
+	border-right: 2px #d2b48c solid;
+	color: #f5f5f5;
+	font-weight: normal;
+	padding-left: 0.5em;
+	margin-top: 1em;
+}
+
+.holiday {
+	background-color: pink;
+	color: red;
+}
+
+.readonly {
+	background-color: #999;
+}
+
+.cantread {
+	background-color: #333;
+}
+</style>
+<script>
+	window.onload = function() {
+		var sections = document.getElementsByTagName('section');
+		var ul = document.getElementsByTagName('ul')[0];
+		for (var i = 0; i < sections.length; i++) {
+			var section = sections[i];
+			var header1 = section.getElementsByTagName('h1')[0];
+			header1.setAttribute('id', i);
+			var headerValue = header1.innerText.replace('top', '');
+			var textNode = document.createTextNode(headerValue);
+			var anchor = document.createElement('a');
+			anchor.appendChild(textNode);
+			anchor.setAttribute('href', '#' + i);
+			var listitem = document.createElement('li');
+			listitem.appendChild(anchor);
+			ul.appendChild(listitem);
+		}
+	}
+</script>
+</head>
+<body>
+  <h1>Emarf</h1>
+  <p>web画面でのデータベース入出力の完全自動化を目指します。</p>
+  <aside>
+    <h1>目次</h1>
+    <ul></ul>
+  </aside>
+  <article>
+    <section>
+      <h1>基本的な考え方</h1>
+      <p>プロパティファイルで設定した命名規則に従ってテーブル名やカラム名を決定してスキーマを作成します。</p>
+      <p>そのスキーマにデータソースを指定してWEBアプリケーションを起動するだけで、主キーや外部キーから関連情報を取得してモデルを作成し、モデルが持つ情報から各入出力画面を自動生成し、またデータの入出力（登録・検索・更新・削除）も内部処理として実行します。</p>
+      <pre>
+データベース
+  ↓
+  ↓┏━━━━━━━┓
+  ↓┃BeanGenerator ┃データベースのメタ情報からModelを生成。
+  ↓┗━━━━━━━┛
+  ↓
+┏━━━┓
+┃Model ┃１つのテーブルまたは１つのビューにつき１つ生成される、プロパティ値を保持するオブジェクト。
+┗━━━┛主キー・外部キーによる関連情報、入力チェックロジック、追加・照会・更新・削除処理も実装。
+  ↓
+  ↓┏━━━┓
+  ↓┃taglib┃jspファイル内で使用し、設定ファイル内容に従った画面項目出力と、データ検索を行う。
+  ↓┗━━━┛
+  ↓
+入力画面
+  ↓
+  ↓┏━━━━━━┓
+  ↓┃EmarfServlet┃送信されたModelをデータベースに登録。
+  ↓┗━━━━━━┛
+  ↓
+データベース</pre>
+    </section>
+    <section>
+      <h1>
+        関連情報<a href="#">top</a>
+      </h1>
+      <p>エンティティの主キー・外部キーから、そのエンティティからの相対関係として、関連するモデルを種類ごとに管理します。</p>
+      <dl>
+        <dt>祖先モデル</dt>
+        <dd>主キーの先頭から一つでも主キー構成が合致するモデル</dd>
+        <dd>
+          <pre>
+┏━━━━━┓          ┌────────┐
+┃祖先モデル┃          │エンティティ    │
+┣━━━━━┫          ├────────┤
+┃祖先ＩＤ  ┃─────│祖先ＩＤ        │
+┗━━━━━┛          │親ＮＯ          │
+                        │エンティティＮＯ│
+                        └────────┘</pre>
+        </dd>
+      </dl>
+      <dl>
+        <dt>親モデル</dt>
+        <dd>末尾以外の主キーと同じ主キー構成のモデル</dd>
+        <dd>
+          <pre>
+┏━━━━━┓          ┌────────┐
+┃親モデル  ┃          │エンティティ    │
+┣━━━━━┫          ├────────┤
+┃祖先ＩＤ  ┃─────│祖先ＩＤ        │
+┃親ＮＯ    ┃─────│親ＮＯ          │
+┗━━━━━┛          │エンティティＮＯ│
+                        └────────┘</pre>
+        </dd>
+      </dl>
+      <dl>
+        <dt>兄弟モデル</dt>
+        <dd>同一の主キーを持つモデル</dd>
+        <dd>
+          <pre>
+┌────────┐          ┏━━━━━━━━┓
+│エンティティ    │          ┃兄弟モデル      ┃
+├────────┤          ┣━━━━━━━━┫
+│祖先ＩＤ        │─────┃祖先ＩＤ        ┃
+│親ＮＯ          │─────┃親ＮＯ          ┃
+│エンティティＮＯ│─────┃エンティティＮＯ┃
+└────────┘          ┗━━━━━━━━┛</pre>
+        </dd>
+      </dl>
+      <dl>
+        <dt>子モデル</dt>
+        <dd>同一の主キーと、あともう一つの主キーを持つモデル</dd>
+        <dd>
+          <pre>
+┌────────┐          ┏━━━━━━━━┓
+│エンティティ    │          ┃子モデル        ┃
+├────────┤          ┣━━━━━━━━┫
+│祖先ＩＤ        │─────┃祖先ＩＤ        ┃
+│親ＮＯ          │─────┃親ＮＯ          ┃
+│エンティティＮＯ│─────┃エンティティＮＯ┃
+└────────┘          ┃子ＮＯ          ┃
+                              ┗━━━━━━━━┛</pre>
+        </dd>
+      </dl>
+      <dl>
+        <dt>子孫モデル</dt>
+        <dd>同一の主キーと、二つ以上の主キーを持つモデル</dd>
+        <dd>
+          <pre>
+┌────────┐          ┏━━━━━━━━┓
+│エンティティ    │          ┃子孫モデル      ┃
+├────────┤          ┣━━━━━━━━┫
+│祖先ＩＤ        │─────┃祖先ＩＤ        ┃
+│親ＮＯ          │─────┃親ＮＯ          ┃
+│エンティティＮＯ│─────┃エンティティＮＯ┃
+└────────┘          ┃子ＮＯ          ┃
+                              ┃子孫ＮＯ        ┃
+                              ┗━━━━━━━━┛</pre>
+        </dd>
+      </dl>
+      <dl>
+        <dt>参照モデル</dt>
+        <dd>外部キーで参照するモデル</dd>
+        <dt>被参照モデル</dt>
+        <dd>他のエンティティの外部キーで参照されるモデル</dd>
+        <dd>
+          <pre>
+                          （参照モデル）
+┏━━━━━━┓          ┌────────┐
+┃被参照モデル┃          │エンティティ    │
+┣━━━━━━┫          ├────────┤
+┃参照ＩＤ    ┃──┐    │祖先ＩＤ        │
+┗━━━━━━┛    │    │親ＮＯ          │
+                    │    │エンティティＮＯ│
+                    └──│参照ＩＤ        │
+                          └────────┘</pre>
+        </dd>
+      </dl>
+      <dl>
+        <dt>履歴モデル</dt>
+        <dd>同一の主キーと、もう一つ、履歴連番に指定した主キーを持つモデル</dd>
+        <dd>子モデルとの違いは、＋１となる主キーが、履歴連番に指定されたカラム名であるかどうかです。</dd>
+        <dt>被履歴モデル</dt>
+        <dd>履歴モデルのもとになるモデル</dd>
+        <dd>
+          <pre>
+（被履歴モデル）
+┌────────┐          ┏━━━━━━━━┓
+│エンティティ    │          ┃履歴モデル      ┃
+├────────┤          ┣━━━━━━━━┫
+│祖先ＩＤ        │─────┃祖先ＩＤ        ┃
+│親ＮＯ          │─────┃親ＮＯ          ┃
+│エンティティＮＯ│─────┃エンティティＮＯ┃
+└────────┘          ┃履歴連番        ┃
+                              ┗━━━━━━━━┛</pre>
+        </dd>
+      </dl>
+      <dl>
+        <dt>集約モデル</dt>
+        <dd>２つ以上のエンティティの主キーを全て組み合わせて主キーとするモデル。</dd>
+        <dd>主キー構成を最大に満足するエンティティの組み合わせを採用します。</dd>
+        <dt>被集約モデル</dt>
+        <dd>集約モデルで集約されるモデル</dd>
+        <dd>
+          <pre>
+（被集約モデル）                                              （被集約モデル）
+┌────────┐          ┏━━━━━━━━━┓          ┌─────────┐
+│エンティティ    │          ┃集約モデル        ┃          │他エンティティ    │
+├────────┤          ┣━━━━━━━━━┫          ├─────────┤
+│祖先ＩＤ        │─────┃祖先ＩＤ          ┃    ┌──│他エンティティＩＤ│
+│親ＮＯ          │─────┃親ＮＯ            ┃    │    └─────────┘
+│エンティティＮＯ│─────┃エンティティＮＯ  ┃    │
+└────────┘          ┃他エンティティＩＤ┃──┘
+祖先モデル・親モデルは        ┗━━━━━━━━━┛
+被集約モデルになりません</pre>
+        </dd>
+      </dl>
+    </section>
+    <section>
+      <h1>
+        各入出力画面<a href="#">top</a>
+      </h1>
+      <p>作成する画面には 検索画面・作成画面・照会画面・編集画面・選択画面 があります。</p>
+      <p>リクエストURLより下記のルールに従って該当する画面を表示します。</p>
+      <pre>http[s]://サーバ[:ポート]/コンテキスト/【servlet_path】/【モデル名】/【ページ名】</pre>
+      <dl>
+        <dt>servlet_path</dt>
+        <dd>各warファイル内で指定されたEmarfServletのパス</dd>
+        <dt>モデル名</dt>
+        <dd>BeanGeneratorが生成したモデル名。テーブル物理名をUpperCamelCaseに変換している。</dd>
+        <dt>ページ名</dt>
+        <dd>
+          表示する画面の名前。
+          <dl>
+            <dt>index</dt>
+            <dd>検索画面を表示します。</dd>
+            <dt>new</dt>
+            <dd>作成画面を表示します。</dd>
+            <dt>view</dt>
+            <dd>照会画面を表示します。</dd>
+            <dt>edit</dt>
+            <dd>編集画面を表示します。</dd>
+            <dt>pick</dt>
+            <dd>選択画面を表示します。</dd>
+          </dl>
+          ※ページ名の指定がなければ「index」と見なして検索画面を表示します。
+        </dd>
+      </dl>
+    </section>
+    <section>
+      <h1>
+        画面構成<a href="#">top</a>
+      </h1>
+      <p>表示される各画面はデフォルトでは以下の画面構成になります。各WARファイル内でのカスタマイズも可能です。</p>
+      <pre>
+┏━━━━━┓リンク
+┃          ┃──[→]──────────────────────────┐
+┃ 検索画面 ┃──[→]─────────────┐                        │
+┃          ┃──[→]┐                        │                        │
+┗━━━━━┛        │                        │      リンク            │
+    │││      ┏━━━━━┓            ┏━━━━━┓──[→]──┏━━━━━┓
+    │││      ┃          ┃登録後遷移  ┃          ┃            ┃          ┃
+    │││      ┃ 作成画面 ┃──[→]──┃ 照会画面 ┃  更新後遷移┃ 編集画面 ┃
+    │││      ┃          ┃            ┃          ┃        戻る┃          ┃
+    │││      ┗━━━━━┛            ┗━━━━━┛──[←]──┗━━━━━┛
+    │││            │戻る                    │戻る                    │戻る
+    ││└────[←]┘                        │                        │
+    │└──────────────────[←]┘                        │
+    └────────────────────────────────[←]┘
+</pre>
+      <dl>
+        <dt>検索画面</dt>
+        <dd>１つのモデルについて、上部に検索フォームを、下部に検索結果を表示します。</dd>
+        <dd>検索フォームには設定ファイルに従って検索条件を表示します。</dd>
+        <dt>作成画面</dt>
+        <dd>１つのモデルと、その兄弟モデル・子モデルについて、新規登録画面を表示します。</dd>
+        <dd>ID（識別子）となる項目には、MySQLではAUTO_INCREMENTが、OracleではSequenceが利用できます。</dd>
+        <dd>またカラム名を連番項目として設定すると、登録するタイミングにその連番項目より前の主キー構成のうちで最大値を取得します。</dd>
+        <dt>照会画面</dt>
+        <dd>１つのモデルと、その兄弟モデル、子モデルについて、照会画面を表示します。</dd>
+        <dt>編集画面</dt>
+        <dd>１つのモデルと、その兄弟モデル、子モデルについて、編集画面を表示します。</dd>
+        <dd>更新時の排他制御にはVersionNOを利用した楽観ロックを使用します。</dd>
+        <dt>選択画面</dt>
+        <dd>検索画面の検索フォームや作成画面・編集画面で外部キー（参照モデル）がある場合、選択画面サブウィンドウのリンクを表示します。</dd>
+        <dd>検索フォームでのリンクは主キーの合致数が最小となるモデルの選択画面を表示します。</dd>
+        <dd>逆に作成画面・編集画面でのリンクは主キーの合致数が最大となるモデルの選択画面を表示します。</dd>
+      </dl>
+    </section>
+    <section>
+      <h1>
+        データの入出力<a href="#">top</a>
+      </h1>
+      <p>ブラウザからの送信値をデータベースに格納し、またデータベースに格納されたデータをブラウザに表示する際の挙動は以下の通りになります。</p>
+      <pre>
+┌ SessionScope ───────────┐          ┌ RequestScope ──────────────────┐
+│     SessionForm = {                │          │                                                  │
+│       "model" :                    │          │                                                  │
+│         {                          │          │              ┌Modelオブジェクト ┐              │
+│           "property" : "value"     │          │              │property=value    │              │
+│         }                          │          │              └─────────┘              │
+│     }                              │          │                                                  │
+└──────────────────┘          └─────────────────────────┘
+          ↑                   ↓                             ↑                        ↓
+          ↑                   ↓                             ↑                        ↓
+          ↑                   ↓                 ┏ Taglib ━↑━━━━━━━━━━━━↓━━━━━━┓
+┏━━━━━━━━━┓  ┏━━━━━━┓          ┃┌─────────┐      ┌───────┐    ┃
+┃SessionFormFilter ┃  ┃EmarfServlet┃→[get]→ ┃│Bodyタグ/Tbodyタグ│      │Fieldsetタグ他│    ┃
+┗━━━━━━━━━┛  ┗━━━━━━┛          ┃└─────────┘      └───────┘    ┃
+          ↑                   ↓                 ┗━━━━━↑━━━━━━━━━━━━↓━━━━━━┛
+ model.property=value   [post/put/delete]                     ↑                        ↓
+          ↑                   ↓                             ↑                        ↓
+     ┌────┐       ┌ DataBase ──────────────────┐  ┌ ブラウザ ───────┐
+     │ブラウザ│       │           ┌MODEL ────┬──┐           │  │&lt;***                    │
+     └────┘       │           │*** │PROPERTY│*** │           │  │  name="model.property" │
+                        │           ├──┼────┼──┤           │  │  value="value" />      │
+                        │           │*** │value   │*** │           │  └────────────┘
+                        │           └──┴────┴──┘           │
+                        └───────────────────────┘</pre>
+      <ol>
+        <li>ブラウザから送信された値は SessionFormFilter により SessionForm に変換され、セッションスコープに保管されます。</li>
+        <li>各filter処理後に EmarfServlet により「登録」「更新」「削除」処理を行う際、セッションスコープに保管された SessionForm を取得します。</li>
+        <li>EmarfServlet ではHTTPメソッドによりデータベースへの登録処理を行います。
+          <dl>
+            <dt>post</dt>
+            <dd>新規登録処理を行います。</dd>
+            <dd>URLに含まれるモデル名を主モデルとし、その兄弟モデルと子モデルのリストについて、主キー値をコピーしながら新規登録処理を行います。</dd>
+            <dt>put</dt>
+            <dd>更新処理を行います。</dd>
+            <dd>URLに含まれる主モデルの更新処理と、その兄弟モデルと子モデルのリストについては、既にデータがある場合は更新処理を、まだデータがない場合は新規登録処理を行います。</dd>
+            <dt>delete</dt>
+            <dd>削除処理を行います。</dd>
+            <dd>URLに含まれる主モデルの更新処理と、その全ての子孫モデルの削除処理を行います。</dd>
+          </dl>
+        </li>
+        <li>EmarfServlet での処理が完了するとjspでの画面出力を行います。jsp内に配置した bodyタグ および tbodyタグ でデータ検索を行い検索結果を画面に出力します。</li>
+      </ol>
+    </section>
+    <section>
+      <h1>
+        WEBアプリケーションの挙動上必要なfilter<a href="#">top</a>
+      </h1>
+      <p>アプリケーション内の「例外処理」「文字コード変換」「送信値の取り扱い」「トランザクション制御」には ServletFilter を使用しています。</p>
+      <dl>
+        <dt>ApplicationErrorFilter</dt>
+        <dd>アプリケーション内で例外が発生した際に、エラーメッセージを設定、メール送信を予約済みの場合はキャンセル処理を行い、次画面遷移の制御を行います。検索画面以外のデータ取得時と削除処理の場合は遷移元画面にリダイレクトし、それ以外の場合はリクエストされた画面にフォワードして画面にエラーメッセージを表示します。</dd>
+        <dt>EncodingFilter</dt>
+        <dd>ブラウザから送信された値とブラウザに返却する文字列を、初期化パラメータに指定された文字コードで符号化します。</dd>
+        <dt>SessionFormFilter</dt>
+        <dd>ブラウザから送信された値に入力チェックを行い、SessionForm に変換してセッションスコープに保存します。</dd>
+        <dt>TransactionFilter</dt>
+        <dd>送信されたリクエストが正常終了した場合はコミット処理を行い、異常終了した場合はロールバック処理を行います。</dd>
+      </dl>
+    </section>
+    <section>
+      <h1>
+        基本的な機能の制御<a href="#">top</a>
+      </h1>
+      <p>モデル生成や画面出力についてはemarf.jar内の App_base.properties の記載内容によって挙動を制御しています。</p>
+      <p>また画面遷移の設定値については、EmarfServlet初期化パラメータ で設定します。</p>
+      <p>データソースの指定やメッセージ文字列など付随機能の設定については、その機能ごとに設定ファイルを保管しています。</p>
+    </section>
+    <section>
+      <h1>
+        App_base.properties<a href="#">top</a>
+      </h1>
+      <p>App_base.properties は emarf.jar に内包されていますが、カスタマイズが必要な場合は、emarf.jar を参照する各warファイル内にて App.properties を配置することで部分的に拡張できます。</p>
+      <p>App.propertiesから取得できればその値を、取得できなければApp_base.propertiesから値を取得します。</p>
+      <p>このApp_base.propertiesでは BeanGenerator・Models・taglib という３種類の設定を行っています。</p>
+      <dl>
+        <dt>BeanGenerator</dt>
+        <dd>
+          モデル生成に関わる設定を行います。
+          <dl>
+            <dt>BeanGenerator.classes</dt>
+            <dd>BeanGeneratorがエンティティのモデルクラスを出力するパス指定の規定値。</dd>
+            <dd>warとして実行しEmarfServletからBeanGeneratorを実行するときはwarファイルのクラスディレクトリが指定される。</dd>
+            <dd>jarとして実行する際に起動引数で指定できるが、起動引数での指定がなかった場合に、この値が使用される。</dd>
+            <dt>BeanGenerator.package</dt>
+            <dd>BeanGeneratorがエンティティのモデルクラスを出力するパッケージ指定。</dd>
+            <dt>BeanGenerator.history.seq.suffix</dt>
+            <dd>履歴モデルとして判断する、最終主キーの連番カラム名接尾辞。</dd>
+            <dd>主キー構成のうち、最後の主キーの末尾がこの文字列と合致した場合は、最後の主キー以外が合致する主キー構成のモデルの履歴モデルと判定します。</dd>
+            <dt>BeanGenerator.crypt.suffix</dt>
+            <dd>パスワードなどDB保管時に暗号化する項目の接尾辞。暗号化についてはCryptUtilに記載。</dd>
+            <dt>BeanGenerator.versionNo</dt>
+            <dd>排他制御用に使用するカラム名。データ取得時に値を保持しておき、更新時・削除時にその条件（where句）に追加します。</dd>
+            <dt>BeanGenerator.type.</dt>
+            <dd>データ型対応表の接頭辞。</dd>
+            <dd>
+              java.sql.Connection.getMetaData().getColumns().getInt("DATA_TYPE")で取得した値を付加して、DATA_TYPEとjavaデータ型の関連付けを管理します。
+              <table>
+                <caption>データ型対応表</caption>
+                <tr>
+                  <th>キー</th>
+                  <th>データ型</th>
+                  <th>Javaデータ型</th>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.-7</td>
+                  <td>BIT</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.-6</td>
+                  <td>TINYINT</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.-5</td>
+                  <td>BIGINT</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.-4</td>
+                  <td>LONGVARBINARY</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.-3</td>
+                  <td>VARBINARY</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.-2</td>
+                  <td>BINARY</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.-1</td>
+                  <td>LONGVARCHAR</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.0</td>
+                  <td>NULL</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.1</td>
+                  <td>CHAR</td>
+                  <td>String</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.2</td>
+                  <td>NUMERIC</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.3</td>
+                  <td>DECIMAL</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.4</td>
+                  <td>INTEGER</td>
+                  <td>Integer</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.5</td>
+                  <td>SMALLINT</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.6</td>
+                  <td>FLOAT</td>
+                  <td>Double</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.7</td>
+                  <td>REAL</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.8</td>
+                  <td>DOUBLE</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.12</td>
+                  <td>VARCHAR</td>
+                  <td>String</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.16</td>
+                  <td>BOOLEAN</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.70</td>
+                  <td>DATALINK</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.91</td>
+                  <td>DATE</td>
+                  <td>java.sql.Date</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.92</td>
+                  <td>TIME</td>
+                  <td>java.sql.Time</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.93</td>
+                  <td>TIMESTAMP</td>
+                  <td>java.sql.Timestamp</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.1111</td>
+                  <td>OtdER</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.2000</td>
+                  <td>JAVA_OBJECT</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.2001</td>
+                  <td>DISTINCT</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.2002</td>
+                  <td>STRUCT</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.2003</td>
+                  <td>ARRAY</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.2004</td>
+                  <td>BLOB</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.2005</td>
+                  <td>CLOB</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.2006</td>
+                  <td>REF</td>
+                </tr>
+                <tr>
+                  <th colspan="3">JDBC 4.0</th>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.-16</td>
+                  <td>LONGNVARCHAR</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.-15</td>
+                  <td>NCHAR</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.-9</td>
+                  <td>NVARCHAR</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.-8</td>
+                  <td>ROWID</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.2011</td>
+                  <td>NCLOB</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.2009</td>
+                  <td>SQLXML</td>
+                </tr>
+                <tr>
+                  <th colspan="3">JDBC 4.2</th>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.2012</td>
+                  <td>REF_CURSOR</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.2013</td>
+                  <td>TIME_WITH_TIMEZONE</td>
+                </tr>
+                <tr>
+                  <td>BeanGenerator.type.2014</td>
+                  <td>TIMESTAMP_WITH_TIMEZONE</td>
+                </tr>
+              </table>
+            </dd>
+          </dl>
+        </dd>
+        <dt>Models</dt>
+        <dd>
+          データの入出力に関わる設定を行います。
+          <dl>
+            <dt>Models.row.max
+            <dd>データ検索時の検索結果取得上限。
+            <dt>Models.id.suffix
+            <dd>識別子（ID、ユニークキー項目）の接尾辞。
+            <dt>Models.seq.suffix
+            <dd>自動で主キー項目に紐づく最大連番を補完する連番項目の接尾辞。
+            <dt>Models.oracle_sequence.prefix
+            <dd>項目名の前に付加してOracleシーケンスを取得する際に使用する接頭辞。
+            <dt>Models.oracle_sequence.suffix
+            <dd>項目名の後に付加してOracleシーケンスを取得する際に使用する接尾辞。
+            <dt>Models.aint.inserts
+            <dd>登録処理で登録対象外とする項目名。
+            <dt>Models.aint.updates
+            <dd>更新処理で更新対象外とする項目名。登録日など。
+            <dt>Models.auto.insert.values
+            <dd>登録処理で自動で項目値を補完する項目名とその値。
+            <dt>Models.auto.update.values
+            <dd>更新処理で自動で項目値を補完する項目名とその値。
+            <dt>Models.fk.モデル名
+            <dd>同じ登録・更新処理内で他モデルから値をおぎなう、主キー以外のプロパティ名をカンマ区切りで記載します。
+          </dl>
+          <dl>
+            <dt>※Models.auto.insert.valuesとModels.auto.update.valuesで使用する@{sysDate}
+            <dd>実行タイミングでのシステム日付を取得します。
+            <dd>ServerTimeが設定されている場合はServerTimeを、
+            <dd>SessionTimeが設定されている場合はSessionTimeを取得します。
+            <dd>上記以外の場合はアプリケーションを実行しているアプリケーションサーバの日付を取得します。
+          </dl>
+        </dd>
+        <dt>taglib</dt>
+        <dd>
+          画面出力に関わる設定を、各タグクラスごとに行います。
+          <dl>
+            <dt>Taglib
+            <dd>
+              <dl>
+                <dt>Taglib.gamen.[モデル名].[ページ名]
+                <dd>通常は「モデル論理名＋ページ名」で画面名を表示しますが、モデルの存在しない画面を表示したい場合や、viewなどddlのコメントでモデル論理名を管理できない場合などに、画面名を指定します。
+                <dt>Taglib.page.index
+                <dd>検索画面で画面名としてモデル名の後ろにつける文字列を指定します。
+                <dt>Taglib.page.new
+                <dd>登録画面で画面名としてモデル名の後ろにつける文字列を指定します。
+                <dt>Taglib.page.edit
+                <dd>編集画面で画面名としてモデル名の後ろにつける文字列を指定します。
+                <dt>Taglib.page.view
+                <dd>照会画面で画面名としてモデル名の後ろにつける文字列を指定します。
+                <dt>Taglib.page.pick
+                <dd>選択画面で画面名としてモデル名の後ろにつける文字列を指定します。
+                <dd>（emarf.jar内のpick.jspでは使用していません。）
+                <dt>Taglib.footer
+                <dd>フッター中央に表示する文字列を指定します。
+                <dt>Taglib.dump
+                <dd>画面下部にデバッグ情報（リクエスト・セッション・アプリケーションの各スコープ変数）を表示するか設定します。
+              </dl>
+            </dd>
+            <dt>Criteria
+            <dd>
+              CriteriaTagSupportを継承するタグの属性を設定します。
+              <dl>
+                <dt>Criteria.option_model.default
+                <dd>チェックボックス・ラジオボタン・プルダウンなど、複数の選択項目を表示する際に、選択項目の取得元として指定するモデル名を省略した場合に採用するモデル名を指定します。
+                <dt>Criteria.option_value.default
+                <dd>チェックボックス・ラジオボタン・プルダウンなど、複数の選択項目を表示する際に、選択項目値の取得元として指定するプロパティ名を省略した場合に採用するプロパティ名を指定します。
+                <dt>Criteria.option_label.default
+                <dd>チェックボックス・ラジオボタン・プルダウンなど、複数の選択項目を表示する際に、選択項目ラベルの取得元として指定するプロパティ名を省略した場合に採用するプロパティ名を指定します。
+              </dl>
+            <dt>Criterion
+            <dd>
+              CriteriaTagSupportを継承するタグ内で、選択項目リストを取得する際の条件を追加するタグの属性を設定します。
+              <dl>
+                <dt>Criterion.model.default
+                <dd>検索条件となるモデル名を省略した場合に採用するモデル名を設定します。
+                <dt>Criterion.property.default
+                <dd>検索条件となるプロパティ名を省略した場合に採用するプロパティ名を設定します。
+                <dt>Criterion.value.default
+                <dd>検索条件となる値を省略した場合に採用する値を設定します。 ※Criterion.value.defaultで使用する@{propertyName}
+                <dd>Criterionタグを内包する親タグ（CriteriaTagSupport）のpropertyName属性を参照し、親タグのモデル名とプロパティ名に合致するモデルの値を取得し、選択項目リストの取得条件に追加します。
+              </dl>
+            <dt>Title.name
+            <dd>headタグ内に出力するtitleタグに設定する文字列を指定します。
+            <dt>H1.name
+            <dd>画面内の最上部に描画するアプリケーション名の文字列を指定します。
+            <dt>Style
+            <dd>
+              warファイル内のcss出力を担うタグの属性を設定します。
+              <dl>
+                <dt>Style.media.pc.min.width
+                <dd>パソコン画面用スタイルシートを適用する最低画面解像度。スマートフォン用スタイルシートとパソコン画面用スタイルシートを使い分ける際に使用する解像度を指定します。
+                <dt>Style.sp.keyword
+                <dd>スマートフォン用スタイルシート名に含まれる文字列を指定します。
+                <dt>Style.pc.keyword
+                <dd>パソコン画面用スタイルシート名に含まれる文字列を指定します。
+              </dl>
+            <dt>Errors
+            <dd>
+              エラーメッセージの出力に使用するタグの出力内容を設定します。
+              <dl>
+                <dt>Errors.prefix
+                <dd>エラーメッセージ群の最初に一回だけ出力される文字列を指定します。
+                <dt>Errors.message.prefix
+                <dd>各エラーメッセージの先頭に出力する文字列を指定します。
+                <dt>Errors.message.suffix
+                <dd>各エラーメッセージの末尾に出力する文字列を指定します。
+                <dt>Errors.suffix
+                <dd>エラーメッセージ群の最後に一回だけ出力される文字列を指定します。
+              </dl>
+            <dt>Warns
+            <dd>
+              警告メッセージの出力に使用するタグの出力内容を設定します。
+              <dl>
+                <dt>Warns.prefix
+                <dd>警告メッセージ群の最初に一回だけ出力される文字列を指定します。
+                <dt>Warns.message.prefix
+                <dd>各警告メッセージの先頭に出力する文字列を指定します。
+                <dt>Warns.message.suffix
+                <dd>各警告メッセージの末尾に出力する文字列を指定します。
+                <dt>Warns.suffix
+                <dd>警告メッセージ群の最後に一回だけ出力される文字列を指定します。
+              </dl>
+            <dt>Infos
+            <dd>
+              通常メッセージの出力に使用するタグの出力内容を設定します。
+              <dl>
+                <dt>Infos.prefix
+                <dd>通常メッセージ群の最初に一回だけ出力される文字列を指定します。
+                <dt>Infos.message.prefix
+                <dd>各通常メッセージの先頭に出力する文字列を指定します。
+                <dt>Infos.message.suffix
+                <dd>各通常メッセージの末尾に出力する文字列を指定します。
+                <dt>Infos.suffix
+                <dd>通常メッセージ群の最後に一回だけ出力される文字列を指定します。
+              </dl>
+            <dt>Headline.hide.models
+            <dd>emarf.jar内に実装済みのlayout.jspでは画面左側に表示される、モデル検索画面へのリンクリストに表示させないモデルを指定します。
+            <dt>Legend.index.default
+            <dd>検索フォームのタイトルとしてモデル名の代わりに表示する文字列を指定します。
+            <dt>Label.notnull.mark
+            <dd>必須入力項目のラベル末尾に出力する文字列を指定します。
+            <dt>Fieldset
+            <dd>
+              プロパティ名と入力項目の引き当てに関する設定を行います。
+              <dl>
+                <dt>Fieldset.aint.select.suffixs
+                <dd>検索フォームで非表示にするプロパティ名の接尾辞をカンマ区切りで複数指定します。
+                <dt>Fieldset.cant.insert.suffixs
+                <dd>登録画面で非活性にするプロパティ名の接尾辞をカンマ区切りで複数指定します。
+                <dt>Fieldset.cant.update.suffixs
+                <dd>更新画面で非活性にするプロパティ名の接尾辞をカンマ区切りで複数指定します。
+                <dt>Fieldset.checks.suffixs
+                <dd>入力フォームにチェックボックスとして表示するプロパティの接尾辞をカンマ区切りで複数指定します。
+                <dt>Fieldset.date.suffixs
+                <dd>入力フォームに日付項目として表示するプロパティの接尾辞をカンマ区切りで複数指定します。
+                <dt>Fieldset.datetime.suffixs
+                <dd>入力フォームに日時項目として表示するプロパティの接尾辞をカンマ区切りで複数指定します。
+                <dt>Fieldset.password.suffixs
+                <dd>入力フォームにパスワードとして表示するプロパティの接尾辞をカンマ区切りで複数指定します。
+                <dt>Fieldset.radios.suffixs
+                <dd>入力フォームにラジオボタンとして表示するプロパティの接尾辞をカンマ区切りで複数指定します。
+                <dt>Fieldset.select.suffixs
+                <dd>入力フォームにプルダウン項目として表示するプロパティの接尾辞をカンマ区切りで複数指定します。
+                <dt>Fieldset.textarea.suffixs
+                <dd>入力フォームにテキストエリアとして表示するプロパティの接尾辞をカンマ区切りで複数指定します。
+                <dt>Fieldset.time.suffixs
+                <dd>入力フォームに時間項目として表示するプロパティの接尾辞をカンマ区切りで複数指定します。
+                <dt>Fieldset.criteria.part.suffixs
+                <dd>検索フォームで部分一致の検索条件とする接尾辞をカンマ区切りで複数指定します。
+                <dt>Fieldset.criteria.range.suffixs
+                <dd>検索フォームで範囲検索の検索条件とする接尾辞をカンマ区切りで複数指定します。
+              </dl>
+            <dt>Input.id.name.suffix
+            <dd>ユニークキー（ID）の名称か評価して選択画面サブウィンドウを表示する際に、その対象となる項目かを判断するために使用する、プロパティ名接尾辞をカンマ区切りで複数指定します。
+            <dt>Checks.nocheck.value
+            <dd>検索フォームのチェックボックス項目で、非合致条件として表示する検索条件の値に付加する文字列を指定します。
+            <dt>Select.optgroup.sep
+            <dd>データ取得元のデータを「optgroup+option」として登録しておくと、プルダウンの出力時にoptgroupを使用して表示しますが、その処理対象のキーワードとしても利用する、optgroupとoptionの間の区切り文字を指定します。
+            <dt>Span
+            <dd>
+              プロパティ値の文字出力の設定を行います。
+              <dl>
+                <dt>Span.id.name.suffixs
+                <dd>ユニークキー項目の出力時に、キーの後ろに「：」区切りで表示するキー項目名称を取得する際に、取得対象のデータか判断する接尾辞をカンマ区切りで複数指定します。
+                <dt>Span.xss.sanitize.values
+                <dd>項目値の出力時に特殊文字を変換するためのルールを「文字列:変換文字列」の形式でカンマ区切りで複数指定します。
+              </dl>
+            <dt>Tables.hide.models
+            <dd>あるモデルを単票画面で表示して兄弟モデルと子モデルの一覧も表示する際、子モデルのリストとして表示しないモデルを指定します。
+            <dt>Table.paging.rows.default
+            <dd>検索結果の表示行数を指定します。tableタグ毎での指定も可能です。
+            <dt>Caption.index.default
+            <dd>検索結果のタイトルとしてモデル名の代わりに表示する文字列を指定します。
+            <dt>Ths.first.default
+            <dd>検索結果のタイトル行の一番左に出力する連番列のタイトルに使用する文字列を指定します。
+          </dl>
+        </dd>
+      </dl>
+    </section>
+    <section>
+      <h1>
+        EmarfServlet初期化パラメータ<a href="#">top</a>
+      </h1>
+      <p>EmarfServletでは初期化パラメータを使用して画面遷移に関わる設定などを行います。emarf.jarを参照する各warファイル内のweb.xmlにて以下の項目を指定するか、指定がなければ既定値を使用します。</p>
+      <dl>
+        <dt>base_path</dt>
+        <dd>jspファイルの保管ディレクトリを指定します。</dd>
+        <dt>template</dt>
+        <dd>各画面共通で使用するテンプレートjspファイルのパスを指定します。 テンプレートjspファイルには、headタグやメッセージ表示域、footerタグなどを記載しており、リクエストURLに従って内部に読み込むjspを切り替えて画面を表示しています。</dd>
+        <dt>default_contents</dt>
+        <dd>サーブレットパスまでだけでリクエストを受け付けた際に、テンプレートjspファイルで読み込むjspファイル名を指定します。</dd>
+        <dt>default_model</dt>
+        <dd>テンプレートjspで読み込む、検索・作成・照会・編集画面用の各jspファイルの保管フォルダ名を指定します。 emarf.jar内の既定のjspファイル群を、warファイル内で拡張する際に、格納フォルダ名を変更する必要があれば、この値を設定します。</dd>
+        <dt>static_resource_regexp</dt>
+        <dd>アクセスログの対象外にする、静的ファイルへのリクエストURLの正規表現を指定します。</dd>
+        <dt>action_package</dt>
+        <dd>各warファイル内でアクションクラスを実装する場合はその格納パッケージ名を指定します。</dd>
+      </dl>
+    </section>
+    <section>
+      <h1>
+        その他の設定ファイル<a href="#">top</a>
+      </h1>
+      <dl>
+        <dt>DataSource.properties</dt>
+        <dd>アプリケーションで入出力を行うデータソースを一つだけ指定します。</dd>
+        <dt>MetaData.properties</dt>
+        <dd>データソースからメタ情報を取得する際のパラメータを指定します。</dd>
+        <dt>Message.properties</dt>
+        <dd>メッセージキーとメッセージ文字列を設定します。</dd>
+        <dt>ValidRule.properties</dt>
+        <dd>入力チェックのルールをカラム名の接尾辞ごとに指定します。</dd>
+        <dt>CryptUtil.properties</dt>
+        <dd>暗号化項目の設定を行います。</dd>
+        <dt>ModelsCache.properties</dt>
+        <dd>モデルごとにデータをキャッシュする際の設定を行います。</dd>
+        <dt>FormatRule.properties</dt>
+        <dd>数値データや日付データを文字列変換する際のフォーマットをカラム名の接尾辞ごとに指定します。</dd>
+        <dt>MailUtil.properties</dt>
+        <dd>メール送受信についての設定を行います。</dd>
+        <dt>MailUtil.recv.properties</dt>
+        <dd>メール受信サーバの設定を行います。</dd>
+        <dt>MailUtil.send.properties</dt>
+        <dd>メール送信サーバの設定を行います。</dd>
+        <dt>ehcache.xml</dt>
+        <dd>ModelsCacheなどのキャッシュ設定を行います。</dd>
+        <dt>logback.xml</dt>
+        <dd>ログ出力の設定を行います。</dd>
+      </dl>
+    </section>
+    <section>
+      <h1>
+        機能拡張について<a href="#">top</a>
+      </h1>
+      <p>標準機能で一通りのデータ入出力が可能ですが、以下の拡張点も実装しています。</p>
+      <ol>
+        <li>画面のカスタマイズ</li>
+        <li>テスト用日時設定</li>
+        <li>ログイン機能</li>
+        <li>サービス時間チェック</li>
+      </ol>
+    </section>
+    <section>
+      <h1>
+        画面のカスタマイズ<a href="#">top</a>
+      </h1>
+      <p>emarf.jarが標準で使用するjspは「META-INF/resources」に保管しています。</p>
+      <p>※モデル変更に影響を受けないオンライン入出力を理想とするため、基本的には標準機能での使用を推奨します。</p>
+      <pre>
+META-INF/resources
+│  appError.jsp         ：アプリケーションエラー画面
+│  sysError.jsp         ：システムエラー画面
+│
+├/css
+│    emarf.css          ：標準スタイルシート
+│
+├/image
+│    gif-load.gif       ：画面遷移時に表示するローディング画像
+│
+├/js
+││  clickable.js       ：入力項目やリンクなどマウス操作に関連するスクリプト
+││  datepicker.js      ：jqueryのdatepicker拡張用スクリプト
+││  fieldset.js        ：fieldsetの表示に関するスクリプト
+││  loading.js         ：画面遷移のローディング画像を制御するスクリプト
+││  nav.js             ：ナビゲーションバーによる画面遷移を制御するスクリプト
+││  pick.js            ：選択画面サブウィンドウでの操作に関するスクリプト
+││  storage.js         ：セッションストレージとローカルストレージの入出力用スクリプト
+││
+│└/jquery              ：jquery資材の保管場所
+│
+└/WEB-INF
+  │
+  ├/jsp
+  ││  index.jsp        ：デフォルトコンテンツとなる空のjsp
+  ││  layout.jsp       ：基本レイアウトを定義しているjsp
+  ││
+  │├/common
+  ││    aside.jsp      ：画面左側に表示する親モデルリンク集を表示するjsp
+  ││    dump.jsp       ：フッターの下部に各スコープの変数を表示するjsp
+  ││    footer.jsp     ：画面下部にフッターを表示するjsp
+  ││    headerHtml.jsp ：headタグを記載しているjsp
+  ││    headerPage.jsp ：画面上部のヘッダー域を表示するjsp
+  ││    nav.jsp        ：ヘッダーとコンテンツの間にナビゲーションリストを表示するjsp
+  ││
+  │├/date
+  ││    edit.jsp       ：テスト用の日時を設定する画面用jsp
+  ││
+  │└/default
+  │      edit.jsp       ：編集画面用jsp
+  │      index.jsp      ：一覧画面用jsp
+  │      new.jsp        ：新規登録画面用jsp
+  │      pick.jsp       ：選択画面用jsp
+  │      view.jsp       ：照会画面用jsp
+  │
+  └/lib
+        emarf.tld        ：カスタムタグの定義ファイル</pre>
+      <p>各warファイルに同じフォルダ階層の同じ名前のjspがある場合はそちらを優先して使用します。</p>
+      <p>また「/WEB-INF/jsp」に モデル名のフォルダ を作成しその中に各jspを配置するとそのモデルについてのみ各画面をカスタマイズできます。</p>
+      <pre>
+META-INF/resources
+│
+└/WEB-INF
+  │
+  └/jsp
+    │
+    └/[モデル名]
+          edit.jsp       ：編集画面用jsp
+          index.jsp      ：一覧画面用jsp
+          new.jsp        ：新規登録画面用jsp
+          pick.jsp       ：選択画面用jsp
+          view.jsp       ：照会画面用jsp</pre>
+      <p>jspで使用するカスタムタグは以下に分類されます。</p>
+      <dl>
+        <dt>jp.co.golorp.emarf.tag.lib.base</dt>
+        <dd>開始タグのみのタグ</dd>
+        <dt>jp.co.golorp.emarf.tag.lib.body</dt>
+        <dd>開始タグと閉じタグが対になるタグ</dd>
+        <dd>タグ間の内容出力を制御しない</dd>
+        <dt>jp.co.golorp.emarf.tag.lib.buffer</dt>
+        <dd>開始タグと閉じタグが対になるタグ</dd>
+        <dd>タグ内の内容出力を制御する</dd>
+        <dt>jp.co.golorp.emarf.tag.lib.criteria</dt>
+        <dd>開始タグと閉じタグが対になるタグ</dd>
+        <dd>タグ間の内容出力を制御しない</dd>
+        <dd>項目出力に検索条件を付加できる</dd>
+        <dt>jp.co.golorp.emarf.tag.lib.iterate</dt>
+        <dd>開始タグと閉じタグが対になるタグ</dd>
+        <dd>タグ間の内容出力を制御しない</dd>
+        <dd>項目出力に検索条件を付加できる</dd>
+        <dd>複数の出力対象につき反復して出力する</dd>
+      </dl>
+      <p>実際のタグクラスには以下のようなタグがあります。</p>
+      <ol>
+        <li>headタグ内で使用するタグ
+          <dl>
+            <dt>Title</dt>
+            <dd>タイトル文字列を出力します。</dd>
+            <dt>Script</dt>
+            <dd>/contextroot/js 内にある全てのjsファイルについて、scriptタグを出力します。</dd>
+            <dt>Style</dt>
+            <dd>/contextroot/css 内にある全てのcssファイルについて、styleタグを出力します。</dd>
+          </dl>
+        </li>
+        <li>メッセージ出力に使用するタグ
+          <dl>
+            <dt>Errors</dt>
+            <dd>エラーメッセージを表示します。</dd>
+            <dt>Warns</dt>
+            <dd>警告メッセージを表示します。</dd>
+            <dt>Infos</dt>
+            <dd>通常メッセージを表示します。</dd>
+          </dl>
+        </li>
+        <li>データ取得に使用するタグ
+          <dl>
+            <dt>Body</dt>
+            <dd>単一の検索結果を取得します。</dd>
+            <dt>Tbody</dt>
+            <dd>複数の検索結果を取得します。</dd>
+          </dl>
+        </li>
+        <li>画面遷移に使用するタグ
+          <dl>
+            <dt>Anchor</dt>
+            <dd>"指定したモデル"の"指定したページ"へ"指定したパラメータ"で遷移します。</dd>
+            <dt>Headline</dt>
+            <dd>祖先モデルの検索画面へのリンクを表示します。</dd>
+          </dl>
+        </li>
+        <li>単一モデルの表示に使用するタグ
+          <dl>
+            <dt>Form</dt>
+            <dd>formタグを出力します。</dd>
+            <dt>Fieldset</dt>
+            <dd>指定したモデルの入力フォームを表示します。</dd>
+            <dt>Legend</dt>
+            <dd>入力フォームのタイトル、またはチェックボックスやラジオボタンなど、複数入力項目のラベルを出力します。</dd>
+            <dt>Label</dt>
+            <dd>入力項目のラベルを出力します。</dd>
+          </dl>
+        <li>単一プロパティの入出力に使用するタグ
+          <dl>
+            <dt>Input</dt>
+            <dd>文字列の入力項目を表示します。</dd>
+            <dt>Check</dt>
+            <dd>チェックボックスを表示します。</dd>
+            <dt>Radio</dt>
+            <dd>ラジオボタンを表示します。</dd>
+            <dt>Option</dt>
+            <dd>プルダウンの選択項目を表示します。</dd>
+            <dt>Textarea</dt>
+            <dd>テキストエリアを表示します。</dd>
+            <dt>Span</dt>
+            <dd>文字列の出力項目を表示します。</dd>
+          </dl>
+        </li>
+        <li>複数選択肢の入出力に使用するタグ
+          <dl>
+            <dt>Checks</dt>
+            <dd>複数のチェックボックスを表示します。</dd>
+            <dt>Radios</dt>
+            <dd>複数のラジオボタンを表示します。</dd>
+            <dt>Select</dt>
+            <dd>複数のプルダウン項目を表示します。</dd>
+            <dt>Criterion</dt>
+            <dd>検索条件を追加します。</dd>
+          </dl>
+        </li>
+        <li>ラベル付きの入出力項目に使用するタグ
+          <dl>
+            <dt>InputField</dt>
+            <dd>ラベル付きで文字列の入力項目を表示します。</dd>
+            <dt>ChecksField</dt>
+            <dd>ラベル付きでチェックボックスを表示します。</dd>
+            <dt>RadiosField</dt>
+            <dd>ラベル付きでラジオボタンを表示します。</dd>
+            <dt>SelectField</dt>
+            <dd>ラベル付きでプルダウンを表示します。</dd>
+            <dt>TextareaField</dt>
+            <dd>ラベル付きでテキストエリアを表示します。</dd>
+            <dt>SpanField</dt>
+            <dd>ラベル付きで文字列の出力項目を表示します。</dd>
+          </dl>
+        </li>
+        <li>モデルの一覧表示に使用するタグ
+          <dl>
+            <dt>Table</dt>
+            <dd>指定したモデルの検索結果を表示します。</dd>
+            <dt>Caption</dt>
+            <dd>検索結果にモデル論理名を表示します。</dd>
+            <dt>Thead</dt>
+            <dd>指定したモデルの各カラム論理名を基に項目タイトル行を表示します。</dd>
+            <dt>Tr</dt>
+            <dd>thead内ならthの行を表示し、tbody内ならtdの行を表示します。</dd>
+            <dt>Th</dt>
+            <dd>指定したモデルの指定したカラムについて論理名を表示します。</dd>
+            <dt>Td</dt>
+            <dd>指定したモデルの指定したカラムについて値を表示します。</dd>
+            <dt>Ths</dt>
+            <dd>指定したモデルの各カラム論理名についてthタグを表示します。</dd>
+            <dt>Tds</dt>
+            <dd>指定したモデルの各カラム値についてtdタグを表示します。</dd>
+            <dt>TbodyNo</dt>
+            <dd>tbody内の行番号を表示します。</dd>
+            <dt>TbodyIndex</dt>
+            <dd>tbody内の項目出力用に添え字（tbodyno-1）を出力します。</dd>
+          </dl>
+        </li>
+        <li>モデルの関連情報の表示に使用するタグ
+          <dl>
+            <dt>Fieldsets</dt>
+            <dd>表示中モデルの全ての兄弟モデルについて、fieldsetを表示します。</dd>
+            <dt>Tables</dt>
+            <dd>表示中モデルの全ての子モデルについて、tableを表示します。</dd>
+          </dl>
+        </li>
+        <li>ログイン情報に使用するタグ
+          <dl>
+            <dt>LoginInfo</dt>
+            <dd>ログイン情報を表示します。</dd>
+            <dt>Logout</dt>
+            <dd>ログアウトボタンを表示します。ログイン機能を有効にしている場合に画面上部のヘッダ内に表示されます。</dd>
+          </dl>
+        </li>
+      </ol>
+      <p>モデル出力に関わるタグについて、/emarf-blank/src/main/webapp/WEB-INF/jsp/Sample内に使用例を保管しています。</p>
+      <dl>
+        <dt>index.jsp</dt>
+        <dd>確認用URL： ./emarf/Sample/</dd>
+        <dt>new.jsp</dt>
+        <dd>確認用URL： ./emarf/Sample/new/</dd>
+        <dt>view.jsp</dt>
+        <dd>確認用URL： ./emarf/Sample/view/</dd>
+      </dl>
+    </section>
+    <section>
+      <h1>
+        テスト用日時設定<a href="#">top</a>
+      </h1>
+      <p>テストフェーズでシステム日時の制御が必要な場合は「http[s]://サーバ[:ポート]/コンテキスト/サーブレットパス/date/edit」で表示される画面で設定が可能です。</p>
+      <dl>
+        <dt>ServerDate</dt>
+        <dd>サーバのシステム日時を変更します。そのサーバでテスト中の全てのブラウザに影響します。</dd>
+        <dt>SessionDate</dt>
+        <dd>セッション内でのシステム日時を変更します。他の端末には影響しません。</dd>
+      </dl>
+    </section>
+    <section>
+      <h1>
+        ログイン機能<a href="#">top</a>
+      </h1>
+      <p>ログイン制御が必要な場合は、warファイルのweb.xmlで LoginFilter を有効にします。</p>
+      <dl>
+        <dt>LoginFilter初期化パラメータ</dt>
+        <dd>
+          初期化パラメータで指定したオブジェクトがセッションスコープにあればログイン状態とし、ない場合はログイン画面にリダイレクトします。
+          <dl>
+            <dt>login_keys</dt>
+            <dd>ログイン状態を判定するためにセッションスコープに存在するか確認する際のセッション変数のキーをカンマ区切りで指定します。</dd>
+            <dd>指定した全てのオブジェクトがセッションスコープにあればログイン状態とし、ない場合は未ログイン状態とみなします。</dd>
+            <dt>login_uri</dt>
+            <dd>ログイン画面のパスを指定します。</dd>
+            <dt>logout_uri</dt>
+            <dd>ログアウト処理のパスを指定します。</dd>
+            <dd>ログアウト処理後はログイン画面へリダイレクトします。</dd>
+          </dl>
+        </dd>
+      </dl>
+      <p>LoginFilter を有効にするとログイン機能が使用できるようになりますが、セッション変数の登録はwebアプリケーション側で実装する必要があります。</p>
+      <p>実装例として、MUser（ユーザマスタ）をに指定した場合の例を挙げます。</p>
+      <ul>
+        <li>login_keys : MUser</li>
+        <li>login_url : /pows/emarf/Login/</li>
+        <li>logout_uri : /pows/emarf/Logout/</li>
+      </ul>
+      <dl>
+        <dt>ログイン画面</dt>
+        <dd>ログイン処理をユーザデータ検索処理と考え WEB-INF/jsp/Login/index.jsp を準備します。（login_urlの指定では「/index/」を省略しています。）</dd>
+        <dd>
+          <pre>
+&lt;%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+&lt;%@ taglib uri="http://emarf.golorp.co.jp/tags" prefix="e"%>
+&lt;style>
+div.article {
+  margin-right: 10em;
+}
+&lt;/style>
+&lt;div class="section">
+  &lt;e:form>
+    &lt;fieldset>
+      &lt;legend>ログイン&lt;/legend>
+      &lt;div>
+        &lt;e:label modelName="MUser" propertyName="email" />
+        &lt;e:input type="text" modelName="MUser" propertyName="email" autocomplete="off" />
+      &lt;/div>
+      &lt;div>
+        &lt;e:label modelName="MUser" propertyName="passwordEnc" />
+        &lt;e:input type="password" modelName="MUser" propertyName="passwordEnc" autocomplete="off" />
+      &lt;/div>
+    &lt;/fieldset>
+    &lt;div class="buttons">
+      &lt;e:a modelName="Login" pageName="new">ユーザー登録&lt;/e:a>
+    &lt;/div>
+    &lt;div class="submits">
+      &lt;input type="submit" value="ログイン">
+    &lt;/div>
+  &lt;/e:form>
+&lt;/div></pre>
+        </dd>
+        <dd>ここでは email（メールアドレス）とpasswordEnc（パスワード）でデータ検索を行う画面になっています。</dd>
+        <dd>ユーザ新規登録画面（http[s]://サーバ[:ポート]/コンテキスト/サーブレットパス/Login/new/）へのリンクも表示しています。</dd>
+        <dt>ログイン処理</dt>
+        <dd>ログイン画面ではユーザ情報検索を行いますが、標準機能ではデータ検索を行うだけなので、セッションスコープへのオブジェクト登録を実装するために、EmarfServlet初期化パラメータのaction_packageで指定したパッケージに、LoginIndexGet.java（Action実装）を作成します。</dd>
+        <dd>
+          <pre>
+package [EmarfServlet初期化パラメータのaction_package];
+
+import java.util.List;
+
+import jp.co.golorp.emarf.constants.MessageKeys;
+import jp.co.golorp.emarf.constants.scope.CtxKey;
+import jp.co.golorp.emarf.exception.ApplicationError;
+import jp.co.golorp.emarf.model.Criteria;
+import jp.co.golorp.emarf.model.Model;
+import jp.co.golorp.emarf.model.Models;
+import jp.co.golorp.emarf.servlet.http.Action;
+import jp.co.golorp.emarf.servlet.http.HttpServletContext;
+import jp.co.golorp.emarf.servlet.http.form.SessionForm;
+import jp.co.golorp.emarf.servlet.http.form.SessionModel;
+import jp.co.golorp.emarf.util.CryptUtil;
+
+/**
+ * ログイン処理
+ *
+ * @author oukuf@golorp
+ */
+public class LoginIndexGet implements Action {
+
+    @Override
+    public String execute(final HttpServletContext ctx, final SessionForm sessionForm) {
+
+        // ブラウザから送信値がなければ終了
+        if (!ctx.isPosted()) {
+            return null;
+        }
+
+        // メールアドレスとパスワードがなければエラー
+        SessionModel userForm = sessionForm.getModel("MUser");
+        String email = userForm.get("email");
+        String password = userForm.get("passwordEnc");
+        if (email == null || password == null) {
+            throw new ApplicationError(MessageKeys.ERRORS_PARAM_LOGIN);
+        }
+
+        // メールアドレスとパスワードが正しくなければエラー
+        String passwordEnc = CryptUtil.encrypt(password);
+        Criteria c = Criteria.equal("MUser", "email", email).eq("passwordEnc", passwordEnc);
+        Model user = Models.getModel("MUser", c);
+        if (user == null) {
+            throw new ApplicationError(MessageKeys.ERRORS_PARAM_LOGIN);
+        }
+
+        // ユーザ情報を保管して画面遷移
+        List&lt;String> loginKeys = ctx.getAttribute(CtxKey.LOGIN_KEYS);
+        ctx.setSessionAttribute(loginKeys.get(0), user);
+        return "../";
+    }
+
+}</pre>
+        </dd>
+        <dd>この例ではパスワードを暗号化してデータベースに保管しているため、入力したパスワードも暗号化してから、Criteriaを取得してMUserを検索しています。</dd>
+        <dd>データが取得できた場合は、login_keysで指定したキーでセッションスコープに格納後、モデル名なしのトップ画面に遷移しています。</dd>
+        <dt>ユーザ登録画面</dt>
+        <dd>ログインせずにユーザ登録だけ行うため、WEB-INF/jsp/Login/new.jsp を準備します。</dd>
+        <dd>urlは「http[s]://サーバ[:ポート]/コンテキスト/サーブレットパス/Login/new/」となり、login_urlで指定している「/サーブレットパス/Login/new/」が含まれるため、ログインチェックの対象外となります。</dd>
+        <dd>
+          <pre>
+&lt;%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+&lt;%@ page import="jp.co.golorp.emarf.tag.Taglib"%>
+&lt;%@ taglib uri="http://emarf.golorp.co.jp/tags" prefix="e"%>
+&lt;style>
+div.article {
+  margin-right: 10em;
+}
+&lt;/style>
+&lt;div class="section">
+  &lt;h3>&lt;%=Taglib.getGamenMei(request)%>&lt;/h3>
+  &lt;e:form>
+    &lt;e:fieldset modelName="MUser">
+      &lt;e:criterion />
+    &lt;/e:fieldset>
+    &lt;e:fieldsets modelName="MUser">
+      &lt;e:fieldset>
+        &lt;e:criterion />
+      &lt;/e:fieldset>
+    &lt;/e:fieldsets>
+    &lt;div class="buttons">
+      &lt;a id="backButton" href="javascript:nav.back()">戻る&lt;/a>&lt;input type="reset" value="リセット">
+    &lt;/div>
+    &lt;div class="submits">
+      &lt;input type="submit" value="登録" data-action="./post">
+    &lt;/div>
+  &lt;/e:form>
+&lt;/div></pre>
+        </dd>
+        <dd>MUserモデルとその兄弟モデルについて入力フォームを表示し、標準機能であるEmarfServlet内の登録処理を使用しています。そのため、登録処理完了後は照会画面にリダイレクトされます。</dd>
+        <dt>ユーザ登録後処理（ユーザ照会画面）</dt>
+        <dd>ユーザ登録後は照会画面に遷移しますが、ログイン処理後にスムーズにトップ画面へ遷移させるため、ブラウザには何も表示せずにログイン処理にメールアドレスとパスワードを送信します。</dd>
+        <dd>
+          <pre>
+&lt;%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+&lt;%@ taglib uri="http://emarf.golorp.co.jp/tags" prefix="e"%>
+&lt;script type="text/javascript">
+  $(function() {
+    $('#login').click();
+  });
+&lt;/script>
+&lt;div class="section" style="display: none;">
+  &lt;e:form>
+    &lt;e:input type="text" modelName="MUser" propertyName="email" autocomplete="off" />
+    &lt;e:input type="password" modelName="MUser" propertyName="passwordEnc" autocomplete="off" />
+    &lt;input id="login" type="submit" value="ログイン" data-action="../">
+  &lt;/e:form>
+&lt;/div></pre>
+        </dd>
+        <dd>ログイン処理で正常にログインした後でトップ画面が表示されます。</dd>
+      </dl>
+    </section>
+    <section>
+      <h1>
+        サービス時間チェック<a href="#">top</a>
+      </h1>
+      <p>サービス時間チェックが必要な場合は、warファイルのweb.xmlで OutOfServiceFilter を有効にし、warファイルのクラスパス内に OutOfServiceFilter.properties を作成します。</p>
+      <dl>
+        <dt>OutOfServiceFilter.properties</dt>
+        <dd>更新処理のみ停止する「更新不可時間」と、参照処理自体も停止する「参照不可時間」ごとにサービス停止時間を設定します。</dd>
+        <dd>
+          <dl>
+            <dt>キー部分</dt>
+            <dd>エラーメッセージで置換する文字列をキーに記載します。</dd>
+            <dt>値部分</dt>
+            <dd>区分・開始日時・終了日時を指定します。</dd>
+            <dd>必ずタブ文字で区切ります。</dd>
+            <dd>
+              <dl>
+                <dt>区分</dt>
+                <dd>W（更新不可）もしくはR（参照不可）を指定します。</dd>
+                <dt>開始日時</dt>
+                <dd>開始日時をクーロン式で指定します。</dd>
+                <dt>終了日時</dt>
+                <dd>終了日時をクーロン式で指定します。</dd>
+              </dl>
+            </dd>
+          </dl>
+        </dd>
+      </dl>
+      <p>サンプルとして emarf.jar 内に OutOfServiceFilter.properties.sample を内包しています。</p>
+      <pre>
+#============================
+# 更新不可時間帯
+#============================
+夜10時から朝9時まで           W[Tab]0 22  *  * *[Tab]0 9 * * *
+金曜夜10時から月曜朝9時まで   W[Tab]0 22  *  * 5[Tab]0 9 * * 1
+12/28夜10時から01/04朝9時まで W[Tab]0 22 28 12 *[Tab]0 9 4 1 *
+
+#============================
+# 参照不可時間帯
+#============================
+深夜2時から早朝6時まで           R[Tab]0 2  *  * *[Tab]0 6 * * *
+土曜深夜2時から月曜早朝6時まで   R[Tab]0 2  *  * 6[Tab]0 6 * * 1
+12/29深夜2時から01/04早朝6時まで R[Tab]0 2 29 12 *[Tab]0 6 4 1 *
+</pre>
+      <table>
+        <tr>
+          <th rowspan="3">時間</th>
+          <th colspan="9">2016/12</th>
+          <th colspan="9">2017/01</th>
+        </tr>
+        <tr>
+          <td>金</td>
+          <td class="holiday">土</td>
+          <td class="holiday">日</td>
+          <td>月</td>
+          <td>火</td>
+          <td>水</td>
+          <td>木</td>
+          <td>金</td>
+          <td class="holiday">土</td>
+          <td class="holiday">日</td>
+          <td>月</td>
+          <td>火</td>
+          <td>水</td>
+          <td>木</td>
+          <td>金</td>
+          <td class="holiday">土</td>
+          <td class="holiday">日</td>
+          <td>月</td>
+        </tr>
+        <tr>
+          <td>23</td>
+          <td class="holiday">24</td>
+          <td class="holiday">25</td>
+          <td>26</td>
+          <td>27</td>
+          <td>28</td>
+          <td>29</td>
+          <td>30</td>
+          <td class="holiday">31</td>
+          <td class="holiday">01</td>
+          <td>02</td>
+          <td>03</td>
+          <td>04</td>
+          <td>05</td>
+          <td>06</td>
+          <td class="holiday">07</td>
+          <td class="holiday">08</td>
+          <td>09</td>
+        </tr>
+        <tr>
+          <td>00:00</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+        </tr>
+        <tr>
+          <td>01:00</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+        </tr>
+        <tr>
+          <td>02:00</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+        </tr>
+        <tr>
+          <td>03:00</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+        </tr>
+        <tr>
+          <td>04:00</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+        </tr>
+        <tr>
+          <td>05:00</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+        </tr>
+        <tr>
+          <td>06:00</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+        </tr>
+        <tr>
+          <td>07:00</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+        </tr>
+        <tr>
+          <td>08:00</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+        </tr>
+        <tr>
+          <td>09:00</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+        </tr>
+        <tr>
+          <td>10:00</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+        </tr>
+        <tr>
+          <td>11:00</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+        </tr>
+        <tr>
+          <td>12:00</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+        </tr>
+        <tr>
+          <td>13:00</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+        </tr>
+        <tr>
+          <td>14:00</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+        </tr>
+        <tr>
+          <td>15:00</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+        </tr>
+        <tr>
+          <td>16:00</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+        </tr>
+        <tr>
+          <td>17:00</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+        </tr>
+        <tr>
+          <td>18:00</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+        </tr>
+        <tr>
+          <td>19:00</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+        </tr>
+        <tr>
+          <td>20:00</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+        </tr>
+        <tr>
+          <td>21:00</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td>○</td>
+          <td class="cantread">×</td>
+          <td>○</td>
+        </tr>
+        <tr>
+          <td>22:00</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+        </tr>
+        <tr>
+          <td>23:00</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="readonly">△</td>
+          <td class="cantread">×</td>
+          <td class="readonly">△</td>
+        </tr>
+      </table>
+      <dl>
+        <dt>○</dt>
+        <dd>参照・更新ともに可能な時間帯</dd>
+        <dt>△</dt>
+        <dd>参照は可能・更新は不可の時間帯</dd>
+        <dt>×</dt>
+        <dd>参照も更新も負荷の時間帯</dd>
+      </dl>
+    </section>
+  </article>
+  <footer>footer</footer>
+</body>
+</html>
