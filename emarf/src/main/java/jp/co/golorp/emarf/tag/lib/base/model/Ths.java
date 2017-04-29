@@ -20,6 +20,7 @@ import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
 
 import jp.co.golorp.emarf.constants.AppKey;
+import jp.co.golorp.emarf.generator.BeanGenerator;
 import jp.co.golorp.emarf.properties.App;
 import jp.co.golorp.emarf.servlet.http.EmarfServlet;
 import jp.co.golorp.emarf.sql.MetaData;
@@ -87,6 +88,12 @@ public class Ths extends BaseTagSupport implements Modelable {
 		if (propertyMeis != null) {
 			for (Entry<String, String> propertyMei : propertyMeis.entrySet()) {
 				String propertyName = propertyMei.getKey();
+
+				// 削除フラグなら表示しない
+				if (StringUtil.equalsIgnoreCase(StringUtil.toCamelCase(BeanGenerator.DELETE_F), propertyName)) {
+					continue;
+				}
+
 				if (!Fieldset.AINT_SELECT_SUFFIX_SET.isEnd(propertyName)) {
 					sb.append(Th.render(modelName, propertyName, 0, 0, propertyMei.getValue()));
 				}

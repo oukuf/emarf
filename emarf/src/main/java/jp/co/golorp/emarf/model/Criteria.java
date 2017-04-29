@@ -186,7 +186,7 @@ public final class Criteria implements Cloneable {
 	 *            Criteria
 	 * @return Criteria
 	 */
-	private Criteria and(final Criteria c) {
+	public Criteria and(final Criteria c) {
 		if (this.current().and == null) {
 			this.current().and = new ArrayList<Criteria>();
 		}

@@ -39,6 +39,10 @@ public final class StringUtil extends StringUtils {
 	 */
 	public static String toCamelCase(final String s) {
 
+		if (s == null) {
+			return null;
+		}
+
 		StringBuilder sb = new StringBuilder();
 
 		// "_"で分割

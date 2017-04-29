@@ -21,6 +21,7 @@ import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
 
 import jp.co.golorp.emarf.constants.scope.ReqKey;
+import jp.co.golorp.emarf.generator.BeanGenerator;
 import jp.co.golorp.emarf.model.Criteria;
 import jp.co.golorp.emarf.model.Model;
 import jp.co.golorp.emarf.servlet.http.EmarfServlet;
@@ -116,6 +117,11 @@ public class Tds extends CriteriaTagSupport implements Modelable {
 
 		if (propertyNames != null) {
 			for (String propertyName : propertyNames) {
+
+				// 削除フラグなら表示しない
+				if (StringUtil.equalsIgnoreCase(StringUtil.toCamelCase(BeanGenerator.DELETE_F), propertyName)) {
+					continue;
+				}
 
 				String htmlName = htmlNamePrefix + "." + propertyName;
 

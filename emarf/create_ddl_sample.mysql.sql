@@ -1,5 +1,5 @@
 ﻿-- Project Name : emarf
--- Date/Time    : 2017/04/16 15:34:19
+-- Date/Time    : 2017/04/28 21:43:35
 -- Author       : oukuf@golorp
 -- RDBMS Type   : MySQL
 -- Application  : A5:SQL Mk-2
@@ -83,7 +83,7 @@ create table T_ENTITY_HISTORY (
   , PARENT_SEQ INT comment '親NO'
   , ENTITY_SEQ INT comment 'エンティティNO'
   , HISTORY_REC_SEQ INT comment '履歴NO'
-  , HISTORY_NM VARCHAR(20) not null comment '履歴名称'
+  , ENTITY_NM VARCHAR(20) not null comment 'エンティティ名称'
   , INSERT_DT DATETIME not null comment '登録日時'
   , INSERT_BY INT comment '登録者'
   , UPDATE_DT DATETIME not null comment '更新日時'
@@ -178,6 +178,7 @@ create table T_ENTITY (
   , JIKOKU_HM TIME comment '時刻'
   , JIKAN_TM TIME comment '時間'
   , BETSU_REFER_ID INT comment '別参照ID'
+  , GAZO_IMG VARCHAR(20480) comment '画像'
   , INSERT_DT DATETIME not null comment '登録日時'
   , INSERT_BY INT comment '登録者'
   , UPDATE_DT DATETIME not null comment '更新日時'
@@ -192,6 +193,7 @@ create table T_PARENT (
   ANCESTOR_ID INT comment '祖先ID'
   , PARENT_SEQ INT comment '親NO'
   , PARENT_NM VARCHAR(20) not null comment '親名称'
+  , DELETE_F VARCHAR(2) comment '削除フラグ'
   , INSERT_DT DATETIME not null comment '登録日時'
   , INSERT_BY INT comment '登録者'
   , UPDATE_DT DATETIME not null comment '更新日時'
@@ -205,6 +207,7 @@ drop table if exists T_ANCESTOR cascade;
 create table T_ANCESTOR (
   ANCESTOR_ID INT AUTO_INCREMENT comment '祖先ID'
   , ANCESTOR_NM VARCHAR(20) not null comment '祖先名称'
+  , DELETE_F VARCHAR(2) comment '削除フラグ'
   , INSERT_DT DATETIME not null comment '登録日時'
   , INSERT_BY INT comment '登録者'
   , UPDATE_DT DATETIME not null comment '更新日時'
@@ -215,7 +218,7 @@ create table T_ANCESTOR (
 -- 名称ビュー
 drop view if exists V_MEISHO;
 
-create view V_MEISHO as
+create view V_MEISHO as 
 SELECT
   T_ANCESTOR.ANCESTOR_ID
   , T_PARENT.PARENT_SEQ
@@ -226,22 +229,22 @@ SELECT
   , T_PARENT.PARENT_NM
   , T_ENTITY.ENTITY_NM
   , T_CHILD.CHILD_NM
-  , T_DESCENDANT.DESCENDANT_NM
+  , T_DESCENDANT.DESCENDANT_NM 
 FROM
-  T_ANCESTOR
-  INNER JOIN T_PARENT
-    ON T_ANCESTOR.ANCESTOR_ID = T_PARENT.ANCESTOR_ID
-  INNER JOIN T_ENTITY
-    ON T_PARENT.ANCESTOR_ID = T_ENTITY.ANCESTOR_ID
-    AND T_PARENT.PARENT_SEQ = T_ENTITY.PARENT_SEQ
-  INNER JOIN T_CHILD
-    ON T_ENTITY.ANCESTOR_ID = T_CHILD.ANCESTOR_ID
-    AND T_ENTITY.PARENT_SEQ = T_CHILD.PARENT_SEQ
-    AND T_ENTITY.ENTITY_SEQ = T_CHILD.ENTITY_SEQ
-  INNER JOIN T_DESCENDANT
-    ON T_CHILD.ANCESTOR_ID = T_DESCENDANT.ANCESTOR_ID
-    AND T_CHILD.PARENT_SEQ = T_DESCENDANT.PARENT_SEQ
-    AND T_CHILD.ENTITY_SEQ = T_DESCENDANT.ENTITY_SEQ
+  T_ANCESTOR 
+  INNER JOIN T_PARENT 
+    ON T_ANCESTOR.ANCESTOR_ID = T_PARENT.ANCESTOR_ID 
+  INNER JOIN T_ENTITY 
+    ON T_PARENT.ANCESTOR_ID = T_ENTITY.ANCESTOR_ID 
+    AND T_PARENT.PARENT_SEQ = T_ENTITY.PARENT_SEQ 
+  INNER JOIN T_CHILD 
+    ON T_ENTITY.ANCESTOR_ID = T_CHILD.ANCESTOR_ID 
+    AND T_ENTITY.PARENT_SEQ = T_CHILD.PARENT_SEQ 
+    AND T_ENTITY.ENTITY_SEQ = T_CHILD.ENTITY_SEQ 
+  INNER JOIN T_DESCENDANT 
+    ON T_CHILD.ANCESTOR_ID = T_DESCENDANT.ANCESTOR_ID 
+    AND T_CHILD.PARENT_SEQ = T_DESCENDANT.PARENT_SEQ 
+    AND T_CHILD.ENTITY_SEQ = T_DESCENDANT.ENTITY_SEQ 
     AND T_CHILD.CHILD_SEQ = T_DESCENDANT.CHILD_SEQ
 
 ;

@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -218,20 +219,25 @@ public final class EmarfServlet extends HttpServlet {
 		String contentsURI = basePath + SEP + defaultContents + EXT;
 
 		String modelName = RequestUtil.getPathModelName(req);
+
 		if (modelName != null) {
 			// URLにモデル名がある場合
 
-			// contentsURIを「/WEB-INF/jsp/[modelName]/[pageName].jsp」に再設定
 			String pageName = RequestUtil.getPathPageName(req);
+
+			// contentsURIを「/WEB-INF/jsp/[modelName]/[pageName].jsp」に再設定
 			contentsURI = basePath + SEP + modelName + SEP + pageName + EXT;
 
 			// リクエストURLの物理絶対パスを取得
 			// ex)c:\\pleiades-e4.5-java_20150624\\pleiades\\workspace\\.metadata\\.plugins\\org.eclipse.wst.server.core\\tmp2\\wtpwebapps\\deploy\\treleaseirai\\
-			String pathTranslated = req.getPathTranslated().toLowerCase();
+			// String pathTranslated = req.getPathTranslated().toLowerCase();
+			String pathTranslated = req.getPathTranslated();
 
 			// コンテキスト名を取得
-			// ex)deploy
-			String contextName = req.getContextPath().toLowerCase().substring(1);
+			// ex)emarf-blank
+			// String contextName =
+			// req.getContextPath().toLowerCase().substring(1);
+			String contextName = req.getContextPath().substring(1);
 
 			// 物理絶対パスでコンテキスト名の終了位置を取得
 			// ex)119
@@ -241,8 +247,11 @@ public final class EmarfServlet extends HttpServlet {
 			// ex)c:\\pleiades-e4.5-java_20150624\\pleiades\\workspace\\.metadata\\.plugins\\org.eclipse.wst.server.core\\tmp2\\wtpwebapps\\deploy
 			String contextTranslated = pathTranslated.substring(0, endIndex);
 
+			// ワークスペースが全角フォルダ配下の場合にファイルを見つけられないのでdecodeしておく
+			String decodedContextTranslated = URLDecoder.decode(contextTranslated, "UTF-8");
+
 			// ファイルパスを取得
-			String fileName = contextTranslated + contentsURI;
+			String fileName = decodedContextTranslated + contentsURI.replace(SEP, File.separator);
 
 			// ファイルがない場合は、
 			// contentsURIを「/WEB-INF/jsp/default/[pageName].jsp」に再設定
@@ -661,6 +670,8 @@ public final class EmarfServlet extends HttpServlet {
 						// 新規登録
 						model = Models.create(model);
 
+						addHistory(model);
+
 						// 主キー名でループ
 						for (String primaryPropertyName : primaryPropertyNames) {
 
@@ -763,13 +774,15 @@ public final class EmarfServlet extends HttpServlet {
 						// 主キーの補完
 						supply(model, primaryPropertyNames, insertedValues);
 
-						// 補完項目の補完
+						// 外部キーの補完
 						supply(model, foreignPropertyNames, insertedValues);
 
 						try {
 
 							// 更新処理
 							Models.update(model);
+
+							addHistory(model);
 
 						} catch (Exception e) {
 
@@ -779,6 +792,8 @@ public final class EmarfServlet extends HttpServlet {
 							}
 
 							Models.create(model);
+
+							addHistory(model);
 						}
 
 						// 主キー名でループ
@@ -818,6 +833,28 @@ public final class EmarfServlet extends HttpServlet {
 		RequestUtil.sendReservedMail(req);
 	}
 
+	/**
+	 * 履歴モデルを追加
+	 *
+	 * @param model
+	 *            model
+	 */
+	private static void addHistory(final Model model) {
+
+		RelateTablesMap relateTablesMap = ModelUtil.getHistoryBys(model.getClass().getSimpleName());
+
+		if (relateTablesMap != null) {
+
+			for (Entry<String, List<RelateColumnMap>> relateModels : relateTablesMap.entrySet()) {
+
+				String historyModelName = relateModels.getKey();
+				Model historyModel = ModelUtil.getBlankModel(historyModelName);
+				historyModel.populate(model.getProperties());
+				Models.create(historyModel);
+			}
+		}
+	}
+
 	@Override
 	protected void doDelete(final HttpServletRequest req, final HttpServletResponse resp)
 			throws ServletException, IOException {
@@ -854,7 +891,6 @@ public final class EmarfServlet extends HttpServlet {
 				Map<String, Model> modelMap = SessionFormUtil.validates(Crud.DELETE, sessionModel, null);
 
 				if (modelMap != null) {
-					// FIXME UnitTest用にNULL避け追加
 
 					for (Entry<String, Model> modelEntry : modelMap.entrySet()) {
 
@@ -863,9 +899,7 @@ public final class EmarfServlet extends HttpServlet {
 							continue;
 						}
 
-						// 削除処理
-						// （ステートメントが主キーを持ってのみ生成されるので、主キーが揃っているかチェックは必要ないと思う）
-						Models.delete(model);
+						delete(model);
 
 						// 全下位モデルでループ
 						RelateTablesMap relateTablesMap = new RelateTablesMap();
@@ -892,8 +926,10 @@ public final class EmarfServlet extends HttpServlet {
 							}
 
 							List<Model> relateModels = Models.getModels(relateModelName, c);
-							for (Model relateModel : relateModels) {
-								Models.delete(relateModel);
+							if (relateModels != null) {
+								for (Model relateModel : relateModels) {
+									delete(relateModel);
+								}
 							}
 						}
 					}
@@ -905,7 +941,6 @@ public final class EmarfServlet extends HttpServlet {
 
 		String referer = req.getHeader("REFERER");
 		if (referer != null && !referer.contains(PAGE_VIEW)) {
-			// FIXME UnitTest用にNULL避け追加
 
 			// 一覧画面で削除した場合は一覧画面に戻る
 			// referer=http://localhost:8081/emarf-blank/emarf/TAncestor/
@@ -914,7 +949,6 @@ public final class EmarfServlet extends HttpServlet {
 			redirect(resp, DELETED_REDIRECT);
 
 		} else if (referer != null && referer.contains(modelName)) {
-			// FIXME UnitTest用にNULL避け追加
 
 			// 単画面で削除した場合は一つ前の画面に戻る
 			// referer=http://localhost:8081/emarf-blank/emarf/TParent/view/
@@ -951,6 +985,33 @@ public final class EmarfServlet extends HttpServlet {
 
 		// 予約したメールを送信
 		RequestUtil.sendReservedMail(req);
+	}
+
+	/**
+	 * 削除フラグがあれば論理削除。なければ物理削除
+	 *
+	 * @param model
+	 *            model
+	 */
+	private static void delete(final Model model) {
+
+		if (StringUtil.isNotBlank(BeanGenerator.DELETE_F)) {
+			// deleteFの指定がある場合
+
+			String modelName = model.getClass().getSimpleName();
+			String deleteF = StringUtil.toCamelCase(BeanGenerator.DELETE_F);
+
+			// 当該モデルにもDELETE_Fがある場合はUPDATE
+			if (MetaData.getColumnInfo(modelName, deleteF) != null) {
+				model.set(BeanGenerator.DELETE_F, "1");
+				Models.update(model);
+				return;
+			}
+		}
+
+		// 削除処理
+		// ステートメントが主キーを持ってのみ生成されるので、主キーが揃っているかチェックは必要ないと思う
+		Models.delete(model);
 	}
 
 	/**

@@ -107,7 +107,10 @@ public abstract class Model implements Serializable {
 						try {
 							Object value = method.invoke(this);
 							if (value != null) {
-								properties.put(propertyName, value.toString());
+								// historyにpopulateする際にエラーになるので元のクラスのままセットする
+								// properties.put(propertyName,
+								// value.toString());
+								properties.put(propertyName, value);
 							}
 						} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 							throw new SystemError(e);

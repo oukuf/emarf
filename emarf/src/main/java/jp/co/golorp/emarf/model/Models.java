@@ -604,6 +604,25 @@ public final class Models {
 	 */
 	private static Statement getWhere(final String modelName, final Criteria c) {
 
+		if (StringUtil.isNotBlank(BeanGenerator.DELETE_F)) {
+
+			String deleteF = StringUtil.toCamelCase(BeanGenerator.DELETE_F);
+
+			if (MetaData.getColumnInfo(modelName, deleteF) != null) {
+				c.and(Criteria.notEqual(modelName, deleteF, "1").or().eq(deleteF, null));
+			}
+
+			if (c != null) {
+				for (String modelName2 : c.getModels()) {
+					if (!modelName.equals(modelName2)) {
+						if (MetaData.getColumnInfo(modelName2, deleteF) != null) {
+							c.and(Criteria.notEqual(modelName2, deleteF, "1").or().eq(deleteF, null));
+						}
+					}
+				}
+			}
+		}
+
 		StringBuilder sql = new StringBuilder();
 
 		TableInfo tableInfo = MetaData.getTableInfo(modelName);

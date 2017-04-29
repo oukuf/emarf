@@ -1,0 +1,56 @@
+div.aside {
+	position: absolute;
+}
+
+div.article {
+	min-height: 12em;
+}
+
+.button a {
+	position: absolute;
+	top: 0.3em;
+	left: 9.5em;
+	display: block;
+	width: 0.5em;
+	height: 1.5em;
+	/*color: #FFF;*/
+	/*background-color: rgba(0, 0, 0, 0.5);*/
+	background-color: #ccc;
+	text-align: center;
+	text-decoration: none;
+	/*line-height: 6em;*/
+}
+
+.open:after {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0.5em;
+	right: 3px;
+	width: 5px;
+	height: 5px;
+	border-top: 1px solid #000;
+	border-right: 1px solid #000;
+	transform: rotate(45deg);
+	-moz-transform: rotate(45deg);
+	-webkit-transform: rotate(45deg);
+	-ms-transform: rotate(45deg);
+	-o-tansform: rotate(45deg);
+}
+
+.close:after {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0.5em;
+	right: 0px;
+	width: 5px;
+	height: 5px;
+	border-top: 1px solid #000;
+	border-left: 1px solid #000;
+	transform: rotate(-45deg);
+	-moz-transform: rotate(-45deg);
+	-webkit-transform: rotate(-45deg);
+	-ms-transform: rotate(-45deg);
+	-o-tansform: rotate(-45deg);
+}

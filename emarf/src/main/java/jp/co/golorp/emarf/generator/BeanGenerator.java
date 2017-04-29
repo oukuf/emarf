@@ -112,6 +112,9 @@ public final class BeanGenerator {
 	/** VERSION_NOカラム名 */
 	public static final String VERSION_NO = App.get(AppKey.BEANGENERATOR_VERSIONNO);
 
+	/** 削除フラグカラム名 */
+	public static final String DELETE_F = App.get(AppKey.BEANGENERATOR_DELETE_F);
+
 	/**
 	 * モデル生成
 	 *

@@ -78,7 +78,9 @@ public class Criterion extends BaseTagSupport implements Valuable {
 			this.value = VALUE_DEFAULT;
 		}
 
-		((CriteriaTagSupport) this.getParent()).addCriteria(this.modelName, this.propertyName, this.value);
+		CriteriaTagSupport parent = (CriteriaTagSupport) this.getParent();
+
+		parent.addCriteria(this.modelName, this.propertyName, this.value);
 
 		return null;
 	}

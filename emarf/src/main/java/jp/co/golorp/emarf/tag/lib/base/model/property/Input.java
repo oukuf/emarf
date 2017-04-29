@@ -256,7 +256,40 @@ public class Input extends BaseTagSupport implements Propertiable {
 			sb.append(sb2);
 		}
 
+		if (StringUtil.equals(type, "file")) {
+			addForFileTag(sb, htmlName, value);
+		}
+
 		return sb.toString();
+	}
+
+	/**
+	 * @param sb
+	 *            sb
+	 * @param htmlName
+	 *            htmlName
+	 * @param value
+	 *            value
+	 */
+	private static void addForFileTag(final StringBuilder sb, final String htmlName, final Object value) {
+
+		sb.append("<img id=\"").append(toHtmlId(htmlName)).append("_img\" name=\"").append(htmlName)
+				.append(".img\" src=\"");
+
+		if (StringUtil.isNotBlank(value)) {
+			sb.append(value);
+		}
+
+		sb.append("\">");
+
+		sb.append("<textarea id=\"").append(toHtmlId(htmlName)).append("\" name=\"").append(htmlName)
+				.append("\" style=\"display:none;\">");
+
+		if (StringUtil.isNotBlank(value)) {
+			sb.append(value);
+		}
+
+		sb.append("</textarea>");
 	}
 
 	/**

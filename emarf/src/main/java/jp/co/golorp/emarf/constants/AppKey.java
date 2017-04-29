@@ -41,6 +41,9 @@ public abstract class AppKey {
 	/** BeanGenerator.VERSION_NO */
 	public static final String BEANGENERATOR_VERSIONNO = "BeanGenerator.versionNo";
 
+	/** BeanGenerator.DELETE_F */
+	public static final String BEANGENERATOR_DELETE_F = "BeanGenerator.deleteF";
+
 	/** インライン利用 */
 	public static final String BEANGENERATOR_TYPE_PREFIX = "BeanGenerator.type.";
 
@@ -252,6 +255,9 @@ public abstract class AppKey {
 
 	/** Fieldset.TIME_SUFFIX_SET */
 	public static final String FIELDSET_TIME_SUFFIXS = "Fieldset.time.suffixs";
+
+	/** Fieldset.IMG_SUFFIX_SET */
+	public static final String FIELDSET_IMG_SUFFIXS = "Fieldset.img.suffixs";
 
 	/** Fieldset.PART_SUFFIX_SET */
 	public static final String FIELDSET_CRITERIA_PART_SUFFIXS = "Fieldset.criteria.part.suffixs";

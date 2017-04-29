@@ -98,6 +98,11 @@ public class Span extends CriteriaTagSupport implements Propertiable {
 			final Object value, final Criteria criteria, final String optionModel, final String optionValue,
 			final String optionLabel) {
 
+		// image
+		if (Fieldset.IMG_SUFFIX_SET.isEnd(htmlName)) {
+			return "<img id=\"" + toHtmlId(htmlName) + "\" src=\"" + value + "\">";
+		}
+
 		// textareaならpreにする
 		String tagName = "span";
 		if (Fieldset.TEXTAREA_SUFFIX_SET.isEnd(htmlName)) {

@@ -18,6 +18,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.jsp.JspException;
 
 import jp.co.golorp.emarf.constants.AppKey;
+import jp.co.golorp.emarf.generator.BeanGenerator;
 import jp.co.golorp.emarf.model.Criteria;
 import jp.co.golorp.emarf.properties.App;
 import jp.co.golorp.emarf.properties.collection.AppSet;
@@ -80,6 +81,9 @@ public class Fieldset extends CriteriaTagSupport implements Modelable {
 
 	/** 時間項目のサフィックス */
 	public static final AppSet<String> TIME_SUFFIX_SET = App.getSet(AppKey.FIELDSET_TIME_SUFFIXS);
+
+	/** 画像項目のサフィックス */
+	public static final AppSet<String> IMG_SUFFIX_SET = App.getSet(AppKey.FIELDSET_IMG_SUFFIXS);
 
 	/** 部分一致項目の接尾辞 */
 	public static final AppSet<String> PART_SUFFIX_SET = App.getSet(AppKey.FIELDSET_CRITERIA_PART_SUFFIXS);
@@ -147,6 +151,11 @@ public class Fieldset extends CriteriaTagSupport implements Modelable {
 
 		for (ColumnInfo columnInfo : tableInfo.getColumnInfos()) {
 			// カラム情報でループ
+
+			// 削除フラグなら表示しない
+			if (StringUtil.equalsIgnoreCase(BeanGenerator.DELETE_F, columnInfo.getColumnName())) {
+				continue;
+			}
 
 			// カラム論理名
 			String columnMei = columnInfo.getColumnMei();
@@ -223,8 +232,7 @@ public class Fieldset extends CriteriaTagSupport implements Modelable {
 					Object value0 = RequestUtil.lookup(request, this.modelName, propertyName, htmlName0);
 					Object value1 = RequestUtil.lookup(request, this.modelName, propertyName, htmlName1);
 
-					sb.append("<div>");
-					sb.append(Label.render(toHtmlId(htmlName), columnMei, false));
+					sb.append("<div>").append(Label.render(toHtmlId(htmlName), columnMei, false));
 					sb.append(Input.render(htmlName0, value0, false, this.pageContext, type, maxlength, null, null));
 					sb.append("&nbsp;～&nbsp;");
 					sb.append(Input.render(htmlName1, value1, false, this.pageContext, type, maxlength, null, null));
@@ -351,6 +359,12 @@ public class Fieldset extends CriteriaTagSupport implements Modelable {
 		// 時間プロパティの場合
 		if (Fieldset.TIME_SUFFIX_SET.isEnd(propertyName)) {
 			return InputField.render(this.pageContext, "time", htmlName, value, columnMei, maxlength, autocomplete,
+					readonly, notnull);
+		}
+
+		// 画像プロパティの場合
+		if (Fieldset.IMG_SUFFIX_SET.isEnd(propertyName)) {
+			return InputField.render(this.pageContext, "file", htmlName, value, columnMei, maxlength, autocomplete,
 					readonly, notnull);
 		}
 

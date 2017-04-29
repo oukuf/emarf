@@ -314,8 +314,9 @@ public class Tbody extends IterateTagSupport implements Modelable {
 				for (String propertyName : primaryPropertyNames) {
 					if (c == null) {
 						c = Criteria.ascending(this.modelName, propertyName);
+					} else {
+						c.asc(this.modelName, propertyName);
 					}
-					c.asc(this.modelName, propertyName);
 				}
 
 				datas = Models.getModels(this.modelName, c, rows, page);
