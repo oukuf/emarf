@@ -432,7 +432,7 @@ public final class RequestUtil {
 			RelateColumnMap relateColumnMap = new RelateColumnMap();
 
 			// 当該モデルの親リレーション情報を取得（参照モデルでないので一つ目だけを取得する）
-			RelateTablesMap parentTablesMap = ModelUtil.getParentTablesMap(modelName);
+			RelateTablesMap parentTablesMap = ModelUtil.getParents(modelName);
 			if (parentTablesMap != null) {
 				List<RelateColumnMap> parentColumnMaps = parentTablesMap.get(parentModelName);
 				if (parentColumnMaps != null) {
@@ -441,8 +441,18 @@ public final class RequestUtil {
 				}
 			}
 
+			// 当該モデルの再帰元リレーション情報を取得（参照モデルでないので一つ目だけを取得する）
+			RelateTablesMap recursiveToTablesMap = ModelUtil.getRecursiveTos(modelName);
+			if (recursiveToTablesMap != null) {
+				List<RelateColumnMap> recursiveToColumnMaps = recursiveToTablesMap.get(parentModelName);
+				if (recursiveToColumnMaps != null) {
+					RelateColumnMap recursiveToColumnMap = recursiveToColumnMaps.get(0);
+					relateColumnMap.putAll(recursiveToColumnMap);
+				}
+			}
+
 			// 当該モデルの履歴元リレーション情報を取得（参照モデルでないので一つ目だけを取得する）
-			RelateTablesMap historyOfTablesMap = ModelUtil.getHistoryOfTablesMap(modelName);
+			RelateTablesMap historyOfTablesMap = ModelUtil.getHistoryOfs(modelName);
 			if (historyOfTablesMap != null) {
 				List<RelateColumnMap> historyOfColumnMaps = historyOfTablesMap.get(parentModelName);
 				if (historyOfColumnMaps != null) {
@@ -452,7 +462,7 @@ public final class RequestUtil {
 			}
 
 			// 当該モデルの集約元リレーション情報を取得（参照モデルでないので一つ目だけを取得する）
-			RelateTablesMap summaryOfTablesMap = ModelUtil.getSummaryOfTablesMap(modelName);
+			RelateTablesMap summaryOfTablesMap = ModelUtil.getSummaryOfs(modelName);
 			if (summaryOfTablesMap != null) {
 				List<RelateColumnMap> summaryOfColumnMaps = summaryOfTablesMap.get(parentModelName);
 				if (summaryOfColumnMaps != null) {
@@ -472,6 +482,12 @@ public final class RequestUtil {
 				String columnName2 = relateColumn.getValue();
 
 				Object value = parentModel.get(columnName2);
+
+				// 再帰モデルの場合
+				if (modelName.equals(parentModelName)) {
+					value = parentModel.get(columnName);
+				}
+
 				if (value != null) {
 					if (c == null) {
 						c = Criteria.equal(modelName, columnName, value);

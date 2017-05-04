@@ -45,6 +45,8 @@ public class Form extends BodyTagSupport {
 				this.className = "koshin";
 			} else if (pageName.equals(EmarfServlet.PAGE_VIEW)) {
 				this.className = "shokai";
+			} else if (pageName.equals(EmarfServlet.PAGE_TREE)) {
+				this.className = "kaisou";
 			} else {
 				this.className = "kensaku";
 			}

@@ -141,6 +141,9 @@ public final class EmarfServlet extends HttpServlet {
 	/** 照会ページ */
 	public static final String PAGE_VIEW = "view";
 
+	/** 階層ページ */
+	public static final String PAGE_TREE = "tree";
+
 	/** 選択ページ */
 	public static final String PAGE_PICK = "pick";
 
@@ -1046,7 +1049,6 @@ public final class EmarfServlet extends HttpServlet {
 		if (summaryBys != null) {
 			relateTablesMap.putAll(summaryBys);
 		}
-
 	}
 
 	/**

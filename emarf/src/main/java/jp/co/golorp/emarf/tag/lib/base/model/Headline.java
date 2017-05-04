@@ -80,19 +80,19 @@ public class Headline extends BaseTagSupport implements Modelable {
 			}
 
 			// 親モデル
-			RelateTablesMap parents = ModelUtil.getParentTablesMap(this.modelName);
+			RelateTablesMap parents = ModelUtil.getParents(this.modelName);
 			if (parents != null) {
 				relateTables.putAll(parents);
 			}
 
 			// 履歴元モデル
-			RelateTablesMap historyOfs = ModelUtil.getHistoryOfTablesMap(this.modelName);
+			RelateTablesMap historyOfs = ModelUtil.getHistoryOfs(this.modelName);
 			if (historyOfs != null) {
 				relateTables.putAll(historyOfs);
 			}
 
 			// サマリ元モデル
-			RelateTablesMap summaryOfs = ModelUtil.getSummaryOfTablesMap(this.modelName);
+			RelateTablesMap summaryOfs = ModelUtil.getSummaryOfs(this.modelName);
 			if (summaryOfs != null) {
 				relateTables.putAll(summaryOfs);
 			}

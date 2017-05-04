@@ -220,6 +220,13 @@ public abstract class AppKey {
 	public static final String LABEL_NOTNULL_MARK = "Label.notnull.mark";
 
 	/*
+	 * DefinitionList
+	 */
+
+	/** DefinitionList.HIDE_SUFFIX_SET */
+	public static final String DATALIST_HIDE_SUFFIXS = "DefinitionList.hide.suffixs";
+
+	/*
 	 * Fieldset
 	 */
 

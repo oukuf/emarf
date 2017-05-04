@@ -91,6 +91,18 @@ public class Tables extends IterateTagSupport implements Modelable {
 
 		if (!StringUtil.is(this.childonly)) {
 
+			// 再帰先モデル
+			RelateTablesMap recursiveBys = ModelUtil.getRecursiveBys(this.parentModelName);
+			if (recursiveBys != null) {
+				for (Entry<String, List<RelateColumnMap>> recursiveBy : recursiveBys.entrySet()) {
+					String modelName = recursiveBy.getKey();
+					List<RelateColumnMap> properties = recursiveBy.getValue();
+					if (!HIDE_MODEL_SET.contains(modelName)) {
+						relateTables.put(modelName, properties);
+					}
+				}
+			}
+
 			// 履歴先モデル
 			RelateTablesMap historyBys = ModelUtil.getHistoryBys(this.parentModelName);
 			if (historyBys != null) {
@@ -137,6 +149,7 @@ public class Tables extends IterateTagSupport implements Modelable {
 		this.modelName = models.getKey();
 
 		// 参照モデルは対象にしていないので一つ目だけを取得すればよい
+		// （参照モデルなら一つの先モデルについて複数の関連が発生しうるということ）
 		Map<String, String> properties = models.getValue().get(0);
 
 		ServletRequest request = this.pageContext.getRequest();
@@ -159,8 +172,9 @@ public class Tables extends IterateTagSupport implements Modelable {
 			}
 		}
 
-		// 子モデルをリクエストスコープに格納
-		Model model = ModelUtil.getBlankModel(this.modelName).populate(primaryKeys);
+		// 子モデルをリクエストスコープに格納。TBodyタグで拾って検索する。
+		Model model = ModelUtil.getBlankModel(this.modelName);
+		model.populate(primaryKeys);
 		request.setAttribute(this.modelName, model);
 	}
 

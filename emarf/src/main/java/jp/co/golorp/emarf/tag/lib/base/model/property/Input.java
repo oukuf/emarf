@@ -351,7 +351,7 @@ public class Input extends BaseTagSupport implements Propertiable {
 		}
 
 		// 集約モデルを取得
-		RelateTablesMap summaryOfs = ModelUtil.getSummaryOfTablesMap(modelName);
+		RelateTablesMap summaryOfs = ModelUtil.getSummaryOfs(modelName);
 		if (summaryOfs != null) {
 			relateTables.putAll(summaryOfs);
 		}

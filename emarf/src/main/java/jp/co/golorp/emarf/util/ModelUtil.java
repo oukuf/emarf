@@ -142,7 +142,7 @@ public final class ModelUtil {
 	 *            モデル名
 	 * @return 親モデル情報
 	 */
-	public static RelateTablesMap getParentTablesMap(final String modelName) {
+	public static RelateTablesMap getParents(final String modelName) {
 		return getRelateTablesMap(modelName, RelationTypes.PARENT);
 	}
 
@@ -153,6 +153,24 @@ public final class ModelUtil {
 	 */
 	public static RelateTablesMap getChildren(final String modelName) {
 		return getRelateTablesMap(modelName, RelationTypes.CHILD);
+	}
+
+	/**
+	 * @param modelName
+	 *            モデル名
+	 * @return 再帰モデル情報
+	 */
+	public static RelateTablesMap getRecursiveTos(final String modelName) {
+		return getRelateTablesMap(modelName, RelationTypes.RECURSIVE_TO);
+	}
+
+	/**
+	 * @param modelName
+	 *            モデル名
+	 * @return 再帰先モデル情報
+	 */
+	public static RelateTablesMap getRecursiveBys(final String modelName) {
+		return getRelateTablesMap(modelName, RelationTypes.RECURSIVE_BY);
 	}
 
 	/**
@@ -178,7 +196,7 @@ public final class ModelUtil {
 	 *            モデル名
 	 * @return 履歴元モデル情報
 	 */
-	public static RelateTablesMap getHistoryOfTablesMap(final String modelName) {
+	public static RelateTablesMap getHistoryOfs(final String modelName) {
 		return getRelateTablesMap(modelName, RelationTypes.HISTORY_OF);
 	}
 
@@ -196,7 +214,7 @@ public final class ModelUtil {
 	 *            モデル名
 	 * @return 集約元モデル情報
 	 */
-	public static RelateTablesMap getSummaryOfTablesMap(final String modelName) {
+	public static RelateTablesMap getSummaryOfs(final String modelName) {
 		return getRelateTablesMap(modelName, RelationTypes.SUMMARY_OF);
 	}
 

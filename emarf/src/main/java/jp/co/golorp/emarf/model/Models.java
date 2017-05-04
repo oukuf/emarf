@@ -345,9 +345,10 @@ public final class Models {
 	 */
 	public static int count(final String modelName, final Criteria c) {
 
-		if (c == null) {
-			return 0;
-		}
+		// TODO なぜ入れたか不明。。思い出せない。。
+		// if (c == null) {
+		// return 0;
+		// }
 
 		Statement where = getWhere(modelName, c);
 
@@ -604,19 +605,31 @@ public final class Models {
 	 */
 	private static Statement getWhere(final String modelName, final Criteria c) {
 
+		Criteria criteria = c;
+
 		if (StringUtil.isNotBlank(BeanGenerator.DELETE_F)) {
 
 			String deleteF = StringUtil.toCamelCase(BeanGenerator.DELETE_F);
 
 			if (MetaData.getColumnInfo(modelName, deleteF) != null) {
-				c.and(Criteria.notEqual(modelName, deleteF, "1").or().eq(deleteF, null));
+				Criteria cDeleteF = Criteria.notEqual(modelName, deleteF, "1").or().eq(deleteF, null);
+				if (criteria == null) {
+					criteria = cDeleteF;
+				} else {
+					criteria.and(cDeleteF);
+				}
 			}
 
-			if (c != null) {
-				for (String modelName2 : c.getModels()) {
+			if (criteria != null) {
+				for (String modelName2 : criteria.getModels()) {
 					if (!modelName.equals(modelName2)) {
 						if (MetaData.getColumnInfo(modelName2, deleteF) != null) {
-							c.and(Criteria.notEqual(modelName2, deleteF, "1").or().eq(deleteF, null));
+							Criteria cDeleteF = Criteria.notEqual(modelName2, deleteF, "1").or().eq(deleteF, null);
+							if (criteria == null) {
+								criteria = cDeleteF;
+							} else {
+								criteria.and(cDeleteF);
+							}
 						}
 					}
 				}
@@ -635,9 +648,9 @@ public final class Models {
 		sql.append(tableName);
 
 		// テーブル結合
-		if (c != null) {
+		if (criteria != null) {
 
-			for (String modelName2 : c.getModels()) {
+			for (String modelName2 : criteria.getModels()) {
 
 				if (modelName.equals(modelName2)) {
 					continue;
@@ -685,12 +698,12 @@ public final class Models {
 
 		List<Object> params = new ArrayList<Object>();
 
-		if (c != null) {
-			if (c.is()) {
+		if (criteria != null) {
+			if (criteria.is()) {
 				sql.append(" WHERE ");
-				params.addAll(c.toParameter());
+				params.addAll(criteria.toParameter());
 			}
-			sql.append(c);
+			sql.append(criteria);
 		}
 
 		return new Statement(sql.toString(), params.toArray(new Object[params.size()]));

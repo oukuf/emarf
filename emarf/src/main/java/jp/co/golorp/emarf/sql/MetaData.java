@@ -135,6 +135,21 @@ public final class MetaData {
 	/**
 	 * @param modelName
 	 *            モデル名
+	 * @return カラム情報リスト
+	 */
+	public static List<ColumnInfo> getColumnInfos(final String modelName) {
+
+		TableInfo tableInfo = getTableInfo(modelName);
+		if (tableInfo != null) {
+			return tableInfo.getColumnInfos();
+		}
+
+		return null;
+	}
+
+	/**
+	 * @param modelName
+	 *            モデル名
 	 * @param propertyName
 	 *            プロパティ名
 	 * @return モデル名とプロパティ名に合致するカラム情報

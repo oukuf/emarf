@@ -50,6 +50,12 @@ public enum RelationTypes {
 	SUMMARY_BY,
 
 	/** 集約モデル */
-	SUMMARY_OF
+	SUMMARY_OF,
+
+	/** 再帰モデル */
+	RECURSIVE_TO,
+
+	/** 被再帰モデル */
+	RECURSIVE_BY
 
 }

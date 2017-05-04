@@ -282,7 +282,10 @@ public class Tbody extends IterateTagSupport implements Modelable {
 
 				Criteria c = null;
 
-				if (!isPathModel) {
+				String parentModelName = Taglib.getParentAttribute(this, "parentModelName");
+
+				// if (!isPathModel) {
+				if (parentModelName != null) {
 					// 子モデルの場合
 
 					// 編集用リストならページングしない
@@ -296,7 +299,6 @@ public class Tbody extends IterateTagSupport implements Modelable {
 					// && this.getParent().getParent() instanceof Tables) {
 					// Tables内なら親モデル・履歴元モデル・集約元モデルからクライテリア取得
 
-					String parentModelName = Taglib.getParentAttribute(this, "parentModelName");
 					c = RequestUtil.addCriteriaParent(request, parentModelName, this.modelName, c);
 
 				} else {

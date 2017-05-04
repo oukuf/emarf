@@ -2,21 +2,19 @@ $(function() {
 
 	var $aside = $('div.aside');
 
-	$aside.prepend('<div class="button"><a href="#"></a></div>');
+	$aside.prepend('<div class="aside_slider"><a href="#"></a></div>');
 
-	var $button = $('.button a');
-
-	//$button.height($aside.height());
+	var $aside_slider = $('.aside_slider a');
 
 	var $article = $('div.article');
 
 	var duration = 500;
 
-	$button.addClass('close');
+	$aside_slider.addClass('close');
 
-	$button.click(function() {
+	$aside_slider.click(function() {
 
-		if ($button.hasClass('open')) {
+		if ($aside_slider.hasClass('open')) {
 
 			$aside.stop().animate({
 				left : '0'
@@ -26,8 +24,8 @@ $(function() {
 				'margin-left' : '10em'
 			}, duration, 'easeOutQuint');
 
-			$button.addClass('close');
-			$button.removeClass('open');
+			$aside_slider.addClass('close');
+			$aside_slider.removeClass('open');
 
 		} else {
 
@@ -39,8 +37,8 @@ $(function() {
 				'margin-left' : '0px'
 			}, duration, 'easeOutQuint');
 
-			$button.addClass('open');
-			$button.removeClass('close');
+			$aside_slider.addClass('open');
+			$aside_slider.removeClass('close');
 		}
 	});
 

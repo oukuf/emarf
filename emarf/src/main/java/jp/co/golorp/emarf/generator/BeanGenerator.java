@@ -756,16 +756,52 @@ public final class BeanGenerator {
 				String sakiTableName = referTo.getKey();
 				List<RelateColumnMap> matchCols = referTo.getValue();
 				for (RelateColumnMap relateColumns : matchCols) {
-					relationMap.addRelation(RelationTypes.REFER_TO, sakiTableName, relateColumns);
+					if (sakiTableName.equals(motoTableName)) {
+						relationMap.addRelation(RelationTypes.RECURSIVE_TO, sakiTableName, relateColumns);
+					} else {
+						relationMap.addRelation(RelationTypes.REFER_TO, sakiTableName, relateColumns);
+					}
 				}
 			}
 		}
 
+		/*
+		 *
+		 */
+
+		setReferBy(allRelations);
+
+		getSummaryRelation(tableInfos, allRelations, allUncles);
+
+		omitSummaryRelation(allRelations);
+
+		dumpRelations(allRelations);
+
+		return allRelations;
+	}
+
+	/**
+	 * @param allRelations
+	 *            allRelations
+	 */
+	private static void setReferBy(final Map<String, RelationMap> allRelations) {
+
 		for (Entry<String, RelationMap> relation : allRelations.entrySet()) {
+
 			String tableName = relation.getKey();
 			RelationMap relationMap = relation.getValue();
 
 			RelateTablesMap referTablesMap = relationMap.get(RelationTypes.REFER_TO);
+
+			if (referTablesMap == null) {
+				referTablesMap = relationMap.get(RelationTypes.RECURSIVE_TO);
+			} else {
+				RelateTablesMap recursiveTablesMap = relationMap.get(RelationTypes.RECURSIVE_TO);
+				if (recursiveTablesMap != null) {
+					referTablesMap.putAll(recursiveTablesMap);
+				}
+			}
+
 			if (referTablesMap == null) {
 				continue;
 			}
@@ -782,22 +818,14 @@ public final class BeanGenerator {
 					}
 
 					RelationMap referRelationMap = allRelations.get(referTableName);
-					referRelationMap.addRelation(RelationTypes.REFER_BY, tableName, matchColumnMap);
+					if (referTableName.equals(tableName)) {
+						referRelationMap.addRelation(RelationTypes.RECURSIVE_BY, tableName, matchColumnMap);
+					} else {
+						referRelationMap.addRelation(RelationTypes.REFER_BY, tableName, matchColumnMap);
+					}
 				}
 			}
 		}
-
-		/*
-		 *
-		 */
-
-		getSummaryRelation(tableInfos, allRelations, allUncles);
-
-		omitSummaryRelation(allRelations);
-
-		dumpRelations(allRelations);
-
-		return allRelations;
 	}
 
 	/**
@@ -876,11 +904,6 @@ public final class BeanGenerator {
 			// 比較先テーブル名
 			String sakiTableName = sakiTableInfo.getTableName();
 
-			// 自テーブルならスキップ
-			if (sakiTableName.equals(motoTableName)) {
-				continue;
-			}
-
 			// 比較先テーブル主キー
 			Set<String> sakiPrimaryKeys = sakiTableInfo.getPrimaryKeys();
 
@@ -904,6 +927,11 @@ public final class BeanGenerator {
 
 			if (motoPrimarySize == matchSize && sakiPrimarySize == matchSize) {
 				// 主キーが全て合致
+
+				// 自テーブルならスキップ
+				if (sakiTableName.equals(motoTableName)) {
+					continue;
+				}
 
 				relation = RelationTypes.BROTHER;
 

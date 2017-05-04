@@ -165,7 +165,16 @@ public class Tds extends CriteriaTagSupport implements Modelable {
 
 			// 照会リンク
 			if (!cantView) {
-				sb.append(Anchor.render(pageContext, modelName, EmarfServlet.PAGE_VIEW, null, null)).append("照会</a>");
+
+				// 再帰モデルなら階層表示
+				String pageName = null;
+				if (ModelUtil.getRecursiveTos(modelName) != null) {
+					pageName = EmarfServlet.PAGE_TREE;
+				} else {
+					pageName = EmarfServlet.PAGE_VIEW;
+				}
+
+				sb.append(Anchor.render(pageContext, modelName, pageName, null, null)).append("照会</a>");
 			}
 
 			// 編集リンク
